@@ -1,0 +1,93 @@
+package app
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+type FaireClient struct {
+	BaseURL   string
+	AuthToken string
+}
+
+type ShipmentRequest struct {
+	Shipments []ShipmentPayload `json:"shipments"`
+}
+
+type ShipmentPayload struct {
+	OrderID        string `json:"order_id"`
+	MakerCostCents int    `json:"maker_cost_cents"`
+	Carrier        string `json:"carrier"`
+	TrackingCode   string `json:"tracking_code"`
+	ShippingType   string `json:"shipping_type"`
+}
+
+func NewFaireClient() *FaireClient {
+	godotenv.Load()
+	token := os.Getenv("FAIRE_API_TOKEN")
+	if token == "" {
+		panic("FAIRE_API_TOKEN environment variable not set")
+	}
+	return &FaireClient{
+		BaseURL:   "https://www.faire.com/external-api/v2",
+		AuthToken: token,
+	}
+}
+
+func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload) error {
+	url := fmt.Sprintf("%s/orders/%s/shipments", c.BaseURL, orderID)
+	body, _ := json.Marshal(ShipmentRequest{Shipments: []ShipmentPayload{payload}})
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", c.AuthToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("faire API error: %s", string(b))
+	}
+	return nil
+}
+
+func (c *FaireClient) GetAllOrders() ([]byte, error) {
+	url := fmt.Sprintf("%s/orders", c.BaseURL)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", c.AuthToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
+func (c *FaireClient) GetOrderByID(PONumber string) ([]byte, error) {
+	orderID := DisplayIDToOrderID(PONumber)
+	url := fmt.Sprintf("%s/orders/%s", c.BaseURL, orderID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", c.AuthToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
