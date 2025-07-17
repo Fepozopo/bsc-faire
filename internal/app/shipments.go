@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type Shipment struct {
@@ -19,19 +21,29 @@ type Shipment struct {
 func ParseShipmentsCSV(path string) ([]Shipment, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 
 	r := csv.NewReader(file)
+
 	headers, err := r.Read()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read headers: %w", err)
 	}
 
 	var idx = make(map[string]int)
 	for i, h := range headers {
-		idx[h] = i
+		// Clean up header names from potential leading/trailing spaces if any
+		idx[strings.TrimSpace(h)] = i
+	}
+
+	// Validate required headers exist
+	requiredHeaders := []string{"Source Document Key", "PO Numbers", "Master Tracking #", "Shipment Charges Applied Total", "Ship Carrier Name", "Billing Type", "Recipient Customer ID"}
+	for _, rh := range requiredHeaders {
+		if _, ok := idx[rh]; !ok {
+			return nil, fmt.Errorf("missing required header: %s", rh)
+		}
 	}
 
 	var shipments []Shipment
@@ -41,20 +53,31 @@ func ParseShipmentsCSV(path string) ([]Shipment, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read record: %w", err)
 		}
-		if record[idx["CustomerNumber"]] != "0090671" {
+
+		// Clean and retrieve Recipient Customer ID
+		recipientCustomerID := record[idx["Recipient Customer ID"]]
+		if recipientCustomerID != "0090671" {
 			continue
 		}
-		makerCost := 0
-		fmt.Sscanf(record[idx["MakerCostCents"]], "%d", &makerCost)
+
+		// Parse Shipment Charges Applied Total
+		makerCostStr := record[idx["Shipment Charges Applied Total"]]
+		makerCostDollars, err := strconv.ParseFloat(makerCostStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse MakerCostCents '%s': %w", makerCostStr, err)
+		}
+		// Convert dollars to cents (multiply by 100) and cast to int
+		makerCostCents := int(makerCostDollars * 100)
+
 		shipments = append(shipments, Shipment{
-			CustomerNumber: record[idx["CustomerNumber"]],
-			PONumber:       record[idx["PONumber"]],
-			BillingType:    record[idx["BillingType"]],
-			Carrier:        record[idx["Carrier"]],
-			TrackingCode:   record[idx["TrackingCode"]],
-			MakerCostCents: makerCost,
+			CustomerNumber: recipientCustomerID,
+			PONumber:       record[idx["PO Numbers"]],
+			BillingType:    record[idx["Billing Type"]],
+			Carrier:        record[idx["Ship Carrier Name"]],
+			TrackingCode:   record[idx["Master Tracking #"]],
+			MakerCostCents: makerCostCents,
 		})
 	}
 	return shipments, nil
