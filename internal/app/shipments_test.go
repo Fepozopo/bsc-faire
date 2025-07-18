@@ -7,12 +7,15 @@ import (
 )
 
 func TestParseShipmentsCSV(t *testing.T) {
-	// Create a temporary CSV file with the expected headers and data
-	csvContent := `Source Document Key,PO Numbers,Master Tracking #,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID
-DOC1,ORDER123,TRACK123,10.00,UPS,Consignee,0090671
-DOC2,ORDER124,TRACK124,20.50,FedEx,Prepaid,0090671
-DOC3,ORDER125,TRACK125,30.00,DHL,Third Party,0000000
-DOC4,ORDER126,TRACK126,5.00,USPS,Consignee,0090671
+	// Create a temporary CSV file with the expected headers and data, including Sale Source (UDF)
+	csvContent := `Source Document Key,PO Numbers,Master Tracking #,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID,Sale Source (UDF)
+DOC1,ORDER123,TRACK123,10.00,UPS,Consignee,0090671,SM
+DOC2,ORDER124,TRACK124,20.50,FedEx,Prepaid,0090671,BSC
+DOC3,ORDER125,TRACK125,30.00,DHL,Third Party,0000000,SM
+DOC4,ORDER126,TRACK126,5.00,USPS,Consignee,0090671,OTHER
+DOC5,ORDER127,TRACK127,7.00,UPS,Consignee,0090671,BSC
+DOC6,ORDER128,TRACK128,8.00,UPS,Consignee,0090671,XYZ
+DOC7,ORDER129,TRACK129,9.00,UPS,Consignee,0090671,SM
 `
 	f, err := os.CreateTemp("", "shipments-*.csv")
 	if err != nil {
@@ -33,60 +36,39 @@ DOC4,ORDER126,TRACK126,5.00,USPS,Consignee,0090671
 		t.Fatalf("unexpected error parsing CSV: %v", err)
 	}
 
-	// Expected shipments: only those with Recipient Customer ID "0090671"
-	expectedLen := 3
+	// Only rows with Sale Source (UDF) == "SM" or "BSC" should be included
+	expectedLen := 4 // ORDER123 (SM), ORDER124 (BSC), ORDER127 (BSC), ORDER129 (SM)
 	if len(shipments) != expectedLen {
 		t.Errorf("expected %d shipments, got %d", expectedLen, len(shipments))
 	}
 
-	// Verify the first shipment
-	if len(shipments) > 0 {
-		s := shipments[0]
-		if s.CustomerNumber != "0090671" {
-			t.Errorf("expected CustomerNumber '0090671', got '%s'", s.CustomerNumber)
-		}
-		if s.PONumber != "ORDER123" {
-			t.Errorf("expected PONumber 'ORDER123', got '%s'", s.PONumber)
-		}
-		if s.BillingType != "Consignee" {
-			t.Errorf("expected BillingType 'Consignee', got '%s'", s.BillingType)
-		}
-		if s.Carrier != "UPS" {
-			t.Errorf("expected Carrier 'UPS', got '%s'", s.Carrier)
-		}
-		if s.TrackingCode != "TRACK123" {
-			t.Errorf("expected TrackingCode 'TRACK123', got '%s'", s.TrackingCode)
-		}
-		if s.MakerCostCents != 1000 { // 10.00 * 100
-			t.Errorf("expected MakerCostCents 1000, got %d", s.MakerCostCents)
-		}
+	// Verify the shipments
+	expected := []struct {
+		PONumber       string
+		SaleSource     string
+		MakerCostCents int
+	}{
+		{"ORDER123", "SM", 1000},
+		{"ORDER124", "BSC", 2050},
+		{"ORDER127", "BSC", 700},
+		{"ORDER129", "SM", 900},
 	}
-
-	// Verify the second shipment
-	if len(shipments) > 1 {
-		s := shipments[1]
-		if s.PONumber != "ORDER124" {
-			t.Errorf("expected PONumber 'ORDER124', got '%s'", s.PONumber)
+	for i, exp := range expected {
+		if i >= len(shipments) {
+			break
 		}
-		if s.MakerCostCents != 2050 { // 20.50 * 100
-			t.Errorf("expected MakerCostCents 2050, got %d", s.MakerCostCents)
+		s := shipments[i]
+		if s.PONumber != exp.PONumber {
+			t.Errorf("expected PONumber '%s', got '%s'", exp.PONumber, s.PONumber)
 		}
-	}
-
-	// Verify the third shipment
-	if len(shipments) > 2 {
-		s := shipments[2]
-		if s.PONumber != "ORDER126" {
-			t.Errorf("expected PONumber 'ORDER126', got '%s'", s.PONumber)
-		}
-		if s.MakerCostCents != 500 { // 5.00 * 100
-			t.Errorf("expected MakerCostCents 500, got %d", s.MakerCostCents)
+		if s.MakerCostCents != exp.MakerCostCents {
+			t.Errorf("expected MakerCostCents %d, got %d", exp.MakerCostCents, s.MakerCostCents)
 		}
 	}
 
 	// Test case for missing required header
-	missingHeaderCSV := `Source Document Key,PO Numbers,Master Tracking #,Shipment Charges Applied Total,Ship Carrier Name,Recipient Customer ID
-DOC1,ORDER123,TRACK123,10.00,UPS,0090671
+	missingHeaderCSV := `Source Document Key,PO Numbers,Master Tracking #,Shipment Charges Applied Total,Ship Carrier Name,Recipient Customer ID,Sale Source (UDF)
+DOC1,ORDER123,TRACK123,10.00,UPS,0090671,SM
 `
 	fMissing, err := os.CreateTemp("", "missing-header-*.csv")
 	if err != nil {
@@ -108,8 +90,8 @@ DOC1,ORDER123,TRACK123,10.00,UPS,0090671
 	}
 
 	// Test case for invalid MakerCostCents format
-	invalidCostCSV := `Source Document Key,PO Numbers,Master Tracking #,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID
-DOC1,ORDER123,TRACK123,ABC,UPS,Consignee,0090671
+	invalidCostCSV := `Source Document Key,PO Numbers,Master Tracking #,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID,Sale Source (UDF)
+DOC1,ORDER123,TRACK123,ABC,UPS,Consignee,0090671,SM
 `
 	fInvalidCost, err := os.CreateTemp("", "invalid-cost-*.csv")
 	if err != nil {

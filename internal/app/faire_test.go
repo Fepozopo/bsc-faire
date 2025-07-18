@@ -31,8 +31,8 @@ func TestNewFaireClientPanic(t *testing.T) {
 
 func TestAddShipment(t *testing.T) {
 	// Step 1: Create temp CSV file
-	csvContent := `Source Document Key,PO Numbers,Master Tracking #,Ready Date/Time,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID
-	0083419,88NJSQS3DD,1Z972Y3Y0301141377,7/16/2025,0,UPS,Consignee,0090671`
+	csvContent := `Source Document Key,PO Numbers,Master Tracking #,Ready Date/Time,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID,Sale Source (UDF)
+0083419,88NJSQS3DD,1Z972Y3Y0301141377,7/16/2025,0,UPS,Consignee,0090671,SM`
 
 	tmpFile, err := os.CreateTemp("", "test_shipments_*.csv")
 	if err != nil {
@@ -83,10 +83,9 @@ func TestAddShipment(t *testing.T) {
 
 	// Step 5: Call AddShipment
 	client := &FaireClient{
-		BaseURL:   server.URL,
-		AuthToken: "dummy-token",
+		BaseURL: server.URL,
 	}
-	err = client.AddShipment(payload.OrderID, payload)
+	err = client.AddShipment(payload.OrderID, payload, "dummy-token")
 	if err != nil {
 		t.Fatalf("AddShipment failed: %v", err)
 	}

@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/joho/godotenv"
 )
 
 type FaireClient struct {
-	BaseURL   string
-	AuthToken string
+	BaseURL string
 }
 
 type ShipmentRequest struct {
@@ -30,17 +28,12 @@ type ShipmentPayload struct {
 
 func NewFaireClient() *FaireClient {
 	godotenv.Load()
-	token := os.Getenv("FAIRE_API_TOKEN")
-	if token == "" {
-		panic("FAIRE_API_TOKEN environment variable not set")
-	}
 	return &FaireClient{
-		BaseURL:   "https://www.faire.com/external-api/v2",
-		AuthToken: token,
+		BaseURL: "https://www.faire.com/external-api/v2",
 	}
 }
 
-func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload) error {
+func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload, apiToken string) error {
 	url := fmt.Sprintf("%s/orders/%s/shipments", c.BaseURL, orderID)
 	body, _ := json.Marshal(ShipmentRequest{Shipments: []ShipmentPayload{payload}})
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
@@ -48,7 +41,7 @@ func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload) error
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-FAIRE-ACCESS-TOKEN", c.AuthToken)
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -61,13 +54,13 @@ func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload) error
 	return nil
 }
 
-func (c *FaireClient) GetAllOrders() ([]byte, error) {
+func (c *FaireClient) GetAllOrders(apiToken string) ([]byte, error) {
 	url := fmt.Sprintf("%s/orders", c.BaseURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("X-FAIRE-ACCESS-TOKEN", c.AuthToken)
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -76,14 +69,14 @@ func (c *FaireClient) GetAllOrders() ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func (c *FaireClient) GetOrderByID(PONumber string) ([]byte, error) {
+func (c *FaireClient) GetOrderByID(PONumber string, apiToken string) ([]byte, error) {
 	orderID := DisplayIDToOrderID(PONumber)
 	url := fmt.Sprintf("%s/orders/%s", c.BaseURL, orderID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("X-FAIRE-ACCESS-TOKEN", c.AuthToken)
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err

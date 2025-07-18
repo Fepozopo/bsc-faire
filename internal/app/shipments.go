@@ -16,6 +16,7 @@ type Shipment struct {
 	Carrier        string
 	TrackingCode   string
 	MakerCostCents int
+	SaleSource     string
 }
 
 func ParseShipmentsCSV(path string) ([]Shipment, error) {
@@ -39,7 +40,7 @@ func ParseShipmentsCSV(path string) ([]Shipment, error) {
 	}
 
 	// Validate required headers exist
-	requiredHeaders := []string{"Source Document Key", "PO Numbers", "Master Tracking #", "Shipment Charges Applied Total", "Ship Carrier Name", "Billing Type", "Recipient Customer ID"}
+	requiredHeaders := []string{"Source Document Key", "PO Numbers", "Master Tracking #", "Shipment Charges Applied Total", "Ship Carrier Name", "Billing Type", "Recipient Customer ID", "Sale Source (UDF)"}
 	for _, rh := range requiredHeaders {
 		if _, ok := idx[rh]; !ok {
 			return nil, fmt.Errorf("missing required header: %s", rh)
@@ -58,7 +59,12 @@ func ParseShipmentsCSV(path string) ([]Shipment, error) {
 
 		// Clean and retrieve Recipient Customer ID
 		recipientCustomerID := record[idx["Recipient Customer ID"]]
+
+		saleSource := record[idx["Sale Source (UDF)"]]
 		if recipientCustomerID != "0090671" {
+			continue
+		}
+		if saleSource != "SM" && saleSource != "BSC" {
 			continue
 		}
 
@@ -78,6 +84,7 @@ func ParseShipmentsCSV(path string) ([]Shipment, error) {
 			Carrier:        record[idx["Ship Carrier Name"]],
 			TrackingCode:   record[idx["Master Tracking #"]],
 			MakerCostCents: makerCostCents,
+			SaleSource:     saleSource,
 		})
 	}
 	return shipments, nil

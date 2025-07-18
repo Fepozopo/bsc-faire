@@ -2,7 +2,10 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 // DisplayIDToOrderID converts a display ID (e.g., "BXDmjBWXID") to an order ID (e.g., "bo_bxdmjBWXID").
@@ -22,12 +25,27 @@ func BillingToShippingType(billing string) string {
 }
 
 func ProcessShipments(csvPath string) error {
+	// Load .env to get API tokens
+	godotenv.Load()
+	bscToken := os.Getenv("BSC_API_TOKEN")
+	smdToken := os.Getenv("SMD_API_TOKEN")
+
 	shipments, err := ParseShipmentsCSV(csvPath)
 	if err != nil {
 		return err
 	}
 	client := NewFaireClient()
 	for _, s := range shipments {
+		var apiToken string
+		switch s.SaleSource {
+		case "SM":
+			apiToken = smdToken
+		case "BSC":
+			apiToken = bscToken
+		default:
+			// Should not happen due to ParseShipmentsCSV, but skip just in case
+			continue
+		}
 		orderID := DisplayIDToOrderID(s.PONumber)
 		payload := ShipmentPayload{
 			OrderID:        orderID,
@@ -36,7 +54,7 @@ func ProcessShipments(csvPath string) error {
 			TrackingCode:   s.TrackingCode,
 			ShippingType:   BillingToShippingType(s.BillingType),
 		}
-		err := client.AddShipment(orderID, payload)
+		err := client.AddShipment(orderID, payload, apiToken)
 		if err != nil {
 			fmt.Printf("Failed to add shipment for order %s: %v\n", s.PONumber, err)
 		} else {
