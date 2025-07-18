@@ -24,7 +24,7 @@ var processCmd = &cobra.Command{
 
 var ordersCmd = &cobra.Command{
 	Use:   "orders [sale_source]",
-	Short: "Get all orders (optionally specify sale source: SM or BSC)",
+	Short: "Get all orders (optionally specify sale source: sm or bsc)",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
@@ -34,12 +34,12 @@ var ordersCmd = &cobra.Command{
 		} else {
 			saleSource := args[0]
 			switch saleSource {
-			case "SM":
+			case "sm":
 				token = os.Getenv("SMD_API_TOKEN")
-			case "BSC":
+			case "bsc":
 				token = os.Getenv("BSC_API_TOKEN")
 			default:
-				return fmt.Errorf("invalid sale source: %s (must be 'SM' or 'BSC')", saleSource)
+				return fmt.Errorf("invalid sale source: %s (must be 'sm' or 'bsc')", saleSource)
 			}
 		}
 		resp, err := client.GetAllOrders(token)
@@ -53,19 +53,19 @@ var ordersCmd = &cobra.Command{
 
 var orderCmd = &cobra.Command{
 	Use:   "order [sale_source] [orderID]",
-	Short: "Get a single order by sale source (SM or BSC) and ID",
+	Short: "Get a single order by sale source (sm or bsc) and ID",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
 		saleSource := args[0]
 		var token string
 		switch saleSource {
-		case "SM":
+		case "sm":
 			token = os.Getenv("SMD_API_TOKEN")
-		case "BSC":
+		case "bsc":
 			token = os.Getenv("BSC_API_TOKEN")
 		default:
-			return fmt.Errorf("invalid sale source: %s (must be 'SM' or 'BSC')", saleSource)
+			return fmt.Errorf("invalid sale source: %s (must be 'sm' or 'bsc')", saleSource)
 		}
 		orderID := args[1]
 		resp, err := client.GetOrderByID(orderID, token)
