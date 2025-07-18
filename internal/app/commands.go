@@ -24,13 +24,15 @@ var processCmd = &cobra.Command{
 
 var ordersCmd = &cobra.Command{
 	Use:   "orders [sale_source]",
-	Short: "Get all orders (optionally specify sale source: sm or bsc)",
+	Short: "Get all orders by sale source (sm or bsc)",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
 		var token string
 		if len(args) == 0 {
-			token = os.Getenv("FAIRE_API_TOKEN")
+			return fmt.Errorf("sale source is required (sm or bsc)")
+		} else if len(args) > 1 {
+			return fmt.Errorf("too many arguments, expected 1 (got %d)", len(args))
 		} else {
 			saleSource := args[0]
 			switch saleSource {
@@ -57,6 +59,9 @@ var orderCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
+		if len(args) != 2 {
+			return fmt.Errorf("expected 2 arguments (sale source and order ID), got %d", len(args))
+		}
 		saleSource := args[0]
 		var token string
 		switch saleSource {
