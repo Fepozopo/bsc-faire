@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -34,6 +35,12 @@ DOC7,ORDER129,TRACK129,9.00,UPS,Consignee,0090671,SM
 	shipments, err := ParseShipmentsCSV(f.Name())
 	if err != nil {
 		t.Fatalf("unexpected error parsing CSV: %v", err)
+	}
+
+	// Log the parsed shipments for debugging
+	for i, s := range shipments {
+		b, _ := json.MarshalIndent(s, "", "  ")
+		t.Logf("Shipment %d:\n%s", i+1, b)
 	}
 
 	// Only rows with Sale Source (UDF) == "SM" or "BSC" should be included
