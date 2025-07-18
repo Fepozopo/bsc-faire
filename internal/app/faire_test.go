@@ -22,7 +22,7 @@ func TestBillingToShippingType(t *testing.T) {
 }
 
 func TestNewFaireClientPanic(t *testing.T) {
-	os.Unsetenv("FAIRE_API_TOKEN")
+	os.Unsetenv("BSC_API_TOKEN")
 	defer func() {
 		recover()
 	}()
