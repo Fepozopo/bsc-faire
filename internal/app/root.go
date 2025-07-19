@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "bsc-faire",
+	Use:   "",
 	Short: "Faire shipment and order CLI",
 }
 
@@ -15,4 +15,8 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func RootCmd() *cobra.Command {
+	return rootCmd
 }
