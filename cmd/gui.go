@@ -8,10 +8,26 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 	apppkg "github.com/Fepozopo/bsc-faire/internal/app"
+	osDialog "github.com/sqweek/dialog"
 )
+
+// openFileWindow creates a file open dialog using the system's native file manager
+// and calls the given callback function with the selected file path.
+// If the user cancels the dialog, the error argument will be set to an error with message "cancelled".
+func openFileWindow(parent fyne.Window, callback func(filePath string, e error)) {
+	filePath, err := osDialog.File().Load() // Use the aliased dialog for the native file open
+	if err != nil {
+		if err.Error() == "cancelled" {
+			dialog.ShowError(fmt.Errorf("file open cancelled: %v", err), parent)
+		} else {
+			dialog.ShowError(fmt.Errorf("file open failed: %v", err), parent)
+		}
+		return
+	}
+	callback(filePath, nil)
+}
 
 func RunGUI() {
 	myApp := fyneapp.New()
@@ -19,41 +35,40 @@ func RunGUI() {
 
 	// Main menu buttons
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
-		fileDialog := dialog.NewFileOpen(
-			func(reader fyne.URIReadCloser, err error) {
+		openFileWindow(w, func(filePath string, e error) {
+			if e != nil {
+				dialog.ShowError(e, w)
+				return
+			}
+			if filePath == "" {
+				return
+			}
+			if len(filePath) < 4 || filePath[len(filePath)-4:] != ".csv" {
+				dialog.ShowError(fmt.Errorf("please select a .csv file"), w)
+				return
+			}
+			resultCh := make(chan error)
+			go func() {
+				err := apppkg.ProcessShipments(filePath)
+				resultCh <- err
+			}()
+			go func() {
+				err := <-resultCh
 				if err != nil {
-					dialog.ShowError(err, w)
-					return
+					fyne.CurrentApp().SendNotification(&fyne.Notification{
+						Title:   "Error",
+						Content: fmt.Sprintf("Failed to process shipments: %v", err),
+					})
+					dialog.ShowError(fmt.Errorf("failed to process shipments: %v", err), w)
+				} else {
+					fyne.CurrentApp().SendNotification(&fyne.Notification{
+						Title:   "Success",
+						Content: "Shipments processed successfully!",
+					})
+					dialog.ShowInformation("Success", "Shipments processed successfully!", w)
 				}
-				if reader == nil {
-					return
-				}
-				path := reader.URI().Path()
-				reader.Close()
-				resultCh := make(chan error)
-				go func() {
-					err := apppkg.ProcessShipments(path)
-					resultCh <- err
-				}()
-				go func() {
-					err := <-resultCh
-					if err != nil {
-						fyne.CurrentApp().SendNotification(&fyne.Notification{
-							Title:   "Error",
-							Content: fmt.Sprintf("Failed to process shipments: %v", err),
-						})
-						dialog.ShowError(fmt.Errorf("failed to process shipments: %v", err), w)
-					} else {
-						fyne.CurrentApp().SendNotification(&fyne.Notification{
-							Title:   "Success",
-							Content: "Shipments processed successfully!",
-						})
-						dialog.ShowInformation("Success", "Shipments processed successfully!", w)
-					}
-				}()
-			}, w)
-		fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".csv"}))
-		fileDialog.Show()
+			}()
+		})
 	})
 	ordersBtn := widget.NewButton("Get All Orders", func() {
 		// Prompt for sale source (sm or bsc)
