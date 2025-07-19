@@ -85,6 +85,6 @@ var orderCmd = &cobra.Command{
 		if err := ShowOrderTUI(order); err != nil {
 			return err
 		}
-		return ShowOrderTUI(order)
+		return nil
 	},
 }

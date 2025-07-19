@@ -49,5 +49,6 @@ func (m orderModel) View() string {
 
 func ShowOrderTUI(order Order) error {
 	p := tea.NewProgram(orderModel{order: order})
-	return p.Start()
+	_, err := p.Run()
+	return err
 }
