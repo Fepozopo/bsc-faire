@@ -58,22 +58,27 @@ func RunGUI() {
 				err := apppkg.ProcessShipments(filePath)
 				resultCh <- err
 			}()
-			go func() {
-				err := <-resultCh
-				if err != nil {
-					fyne.CurrentApp().SendNotification(&fyne.Notification{
-						Title:   "Error",
-						Content: fmt.Sprintf("Failed to process shipments: %v", err),
-					})
-					dialog.ShowError(fmt.Errorf("failed to process shipments: %v", err), w)
-				} else {
-					fyne.CurrentApp().SendNotification(&fyne.Notification{
-						Title:   "Success",
-						Content: "Shipments processed successfully!",
-					})
-					dialog.ShowInformation("Success", "Shipments processed successfully!", w)
-				}
-			}()
+			err := <-resultCh
+			fyne.CurrentApp().SendNotification(&fyne.Notification{
+				Title: func() string {
+					if err != nil {
+						return "Error"
+					} else {
+						return "Success"
+					}
+				}(),
+				Content: func() string {
+					if err != nil {
+						return fmt.Sprintf("Failed to process shipments: %v", err)
+					}
+					return "Shipments processed successfully!"
+				}(),
+			})
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("failed to process shipments: %v", err), w)
+			} else {
+				dialog.ShowInformation("Success", "Shipments processed successfully!", w)
+			}
 		})
 	})
 	ordersBtn := widget.NewButton("Get All Orders", func() {
@@ -110,14 +115,12 @@ func RunGUI() {
 						err  error
 					}{resp, err}
 				}()
-				go func() {
-					result := <-respCh
-					if result.err != nil {
-						dialog.ShowError(fmt.Errorf("failed to get orders: %v", result.err), w)
-						return
-					}
-					dialog.ShowInformation("Orders", string(result.resp), w)
-				}()
+				result := <-respCh
+				if result.err != nil {
+					dialog.ShowError(fmt.Errorf("failed to get orders: %v", result.err), w)
+					return
+				}
+				dialog.ShowInformation("Orders", string(result.resp), w)
 			}, w)
 	})
 
@@ -159,14 +162,12 @@ func RunGUI() {
 						err  error
 					}{resp, err}
 				}()
-				go func() {
-					result := <-respCh
-					if result.err != nil {
-						dialog.ShowError(fmt.Errorf("failed to get order: %v", result.err), w)
-						return
-					}
-					dialog.ShowInformation("Order", string(result.resp), w)
-				}()
+				result := <-respCh
+				if result.err != nil {
+					dialog.ShowError(fmt.Errorf("failed to get order: %v", result.err), w)
+					return
+				}
+				dialog.ShowInformation("Order", string(result.resp), w)
 			}, w)
 	})
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
