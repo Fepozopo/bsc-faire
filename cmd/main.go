@@ -11,7 +11,7 @@ import (
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Welcome to the BSC Faire CLI. Type 'help' for commands, 'exit' to quit.")
+	fmt.Println("Welcome to the Faire CLI. Type 'help' for commands, 'exit' to quit.")
 
 	for {
 		fmt.Print("> ")

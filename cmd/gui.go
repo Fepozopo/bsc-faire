@@ -32,7 +32,7 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 
 func RunGUI() {
 	myApp := fyneapp.New()
-	w := myApp.NewWindow("BSC Faire GUI")
+	w := myApp.NewWindow("Faire GUI")
 
 	// Load .env to get API tokens
 	godotenv.Load()
