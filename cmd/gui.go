@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	apppkg "github.com/Fepozopo/bsc-faire/internal/app"
+	"github.com/joho/godotenv"
 	osDialog "github.com/sqweek/dialog"
 )
 
@@ -32,6 +33,11 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 func RunGUI() {
 	myApp := fyneapp.New()
 	w := myApp.NewWindow("BSC Faire GUI")
+
+	// Load .env to get API tokens
+	godotenv.Load()
+	bscToken := os.Getenv("BSC_API_TOKEN")
+	smdToken := os.Getenv("SMD_API_TOKEN")
 
 	// Main menu buttons
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
@@ -85,9 +91,9 @@ func RunGUI() {
 				var token string
 				switch saleSource {
 				case "sm":
-					token = os.Getenv("SMD_API_TOKEN")
+					token = smdToken
 				case "bsc":
-					token = os.Getenv("BSC_API_TOKEN")
+					token = bscToken
 				default:
 					dialog.ShowError(fmt.Errorf("invalid sale source: must be 'sm' or 'bsc'"), w)
 					return
@@ -134,9 +140,9 @@ func RunGUI() {
 				var token string
 				switch saleSource {
 				case "sm":
-					token = os.Getenv("SMD_API_TOKEN")
+					token = smdToken
 				case "bsc":
-					token = os.Getenv("BSC_API_TOKEN")
+					token = bscToken
 				default:
 					dialog.ShowError(fmt.Errorf("invalid sale source: must be 'sm' or 'bsc'"), w)
 					return
