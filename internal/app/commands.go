@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -77,7 +78,13 @@ var orderCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(resp))
-		return nil
+		var order Order
+		if err := json.Unmarshal(resp, &order); err != nil {
+			return err
+		}
+		if err := ShowOrderTUI(order); err != nil {
+			return err
+		}
+		return ShowOrderTUI(order)
 	},
 }
