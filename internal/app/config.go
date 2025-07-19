@@ -80,3 +80,10 @@ type Order struct {
 	} `json:"brand_discounts"`
 	EstimatedPayoutAt time.Time `json:"estimated_payout_at"`
 }
+
+type Orders struct {
+	Page   int     `json:"page"`
+	Limit  int     `json:"limit"`
+	Cursor string  `json:"cursor"`
+	Orders []Order `json:"orders"`
+}

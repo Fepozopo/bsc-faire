@@ -49,8 +49,11 @@ var ordersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(resp))
-		return nil
+		var ordersResp Orders
+		if err := json.Unmarshal(resp, &ordersResp); err != nil {
+			return fmt.Errorf("failed to parse orders: %w", err)
+		}
+		return ShowOrdersTUI(ordersResp.Orders)
 	},
 }
 
