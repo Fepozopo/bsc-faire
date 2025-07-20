@@ -109,7 +109,7 @@ func RunGUI() {
 				})
 				go func() {
 					client := apppkg.NewFaireClient()
-					resp, err := client.GetAllOrders(token)
+					resp, err := client.GetAllOrders(token, 50, 1, "")
 					respCh <- struct {
 						resp []byte
 						err  error
