@@ -173,7 +173,7 @@ func RunGUI() {
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	w.SetContent(container.NewVBox(
-		widget.NewLabel("BSC Faire GUI"),
+		widget.NewLabel("Faire GUI"),
 		processBtn,
 		ordersBtn,
 		orderBtn,
