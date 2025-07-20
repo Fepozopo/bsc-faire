@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// DisplayIDToOrderID converts a display ID (e.g., "BXDmjBWXID") to an order ID (e.g., "bo_bxdmjBWXID").
+// DisplayIDToOrderID converts a display ID (e.g., "BXDMJBWXID") to an order ID (e.g., "bo_bxdmjbwxid").
 func DisplayIDToOrderID(displayID string) string {
 	return "bo_" + strings.ToLower(displayID)
 }

@@ -7,12 +7,16 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// orderModel is a Bubble Tea model for displaying a single order in a TUI.
 type orderModel struct {
 	order Order
 }
 
+// Init implements the tea.Model interface. No initialization needed here.
 func (m orderModel) Init() tea.Cmd { return nil }
 
+// Update handles key events for the single order view.
+// Pressing 'q' or 'esc' will quit the view.
 func (m orderModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -23,6 +27,7 @@ func (m orderModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// View renders the order details as a string for the TUI.
 func (m orderModel) View() string {
 	created := m.order.CreatedAt.Format("2006-01-02 15:04")
 	retailer := m.order.Address.CompanyName
@@ -30,12 +35,13 @@ func (m orderModel) View() string {
 		retailer = m.order.Address.Name
 	}
 
-	// Calculate total
+	// Calculate total order value in cents
 	var totalCents int
 	for _, item := range m.order.Items {
 		totalCents += item.PriceCents * item.Quantity
 	}
 
+	// Build the order summary string
 	s := fmt.Sprintf(
 		"Order ID: %s\nStatus: %s\nRetailer: %s\nCreated: %s\nTotal: $%.2f\n\nItems:\n",
 		m.order.DisplayID, m.order.State, retailer, created, float64(totalCents)/100,
@@ -48,23 +54,28 @@ func (m orderModel) View() string {
 	return s
 }
 
+// ShowOrderTUI launches a Bubble Tea TUI to display a single order.
+// Blocks until the user quits the view.
 func ShowOrderTUI(order Order) error {
 	p := tea.NewProgram(orderModel{order: order})
 	_, err := p.Run()
 	return err
 }
 
-// Bubble Tea TUI to display and navigate a list of orders
+// orderListModel is a Bubble Tea model for displaying and navigating a list of orders.
 type orderListModel struct {
-	orders   []Order
-	selected int
-	quitting bool
+	orders   []Order // List of orders to display
+	selected int     // Index of the currently selected order
+	quitting bool    // Whether the user has chosen to quit
 }
 
+// Init implements the tea.Model interface. No initialization needed here.
 func (m orderListModel) Init() tea.Cmd {
 	return nil
 }
 
+// Update handles key events for the order list view.
+// Supports navigation (up/down), viewing an order (enter), and quitting (q/esc).
 func (m orderListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -81,7 +92,7 @@ func (m orderListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selected++
 			}
 		case "enter":
-			// Show details for selected order
+			// Show details for selected order in a new TUI.
 			return m, func() tea.Msg {
 				ShowOrderTUI(m.orders[m.selected])
 				return nil
@@ -91,6 +102,7 @@ func (m orderListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// View renders the list of orders, highlighting the selected one.
 func (m orderListModel) View() string {
 	if m.quitting {
 		return ""
@@ -109,6 +121,8 @@ func (m orderListModel) View() string {
 	return b.String()
 }
 
+// ShowOrdersTUI launches a Bubble Tea TUI to display and navigate a list of orders.
+// Blocks until the user quits the view.
 func ShowOrdersTUI(orders []Order) error {
 	p := tea.NewProgram(orderListModel{orders: orders})
 	_, err := p.Run()
