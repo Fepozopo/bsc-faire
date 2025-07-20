@@ -4,14 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+)
+
+var (
+	limitFlag  int
+	pageFlag   int
+	statesFlag string
 )
 
 func init() {
 	rootCmd.AddCommand(processCmd)
 	rootCmd.AddCommand(ordersCmd)
 	rootCmd.AddCommand(orderCmd)
+
+	ordersCmd.Flags().IntVar(&limitFlag, "limit", 50, "Max number of orders to return (10-50)")
+	ordersCmd.Flags().IntVar(&pageFlag, "page", 1, "Page number to return (default 1)")
+	ordersCmd.Flags().StringVar(&statesFlag, "states", "", "Comma separated list of states to exclude. If set, will exclude all except the provided state.")
 }
 
 var processCmd = &cobra.Command{
@@ -26,7 +37,7 @@ var processCmd = &cobra.Command{
 var ordersCmd = &cobra.Command{
 	Use:   "orders [sale_source]",
 	Short: "Get all orders by sale source (sm or bsc)",
-	Args:  cobra.RangeArgs(0, 1),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
 		var token string
@@ -45,13 +56,63 @@ var ordersCmd = &cobra.Command{
 				return fmt.Errorf("invalid sale source: %s (must be 'sm' or 'bsc')", saleSource)
 			}
 		}
-		resp, err := client.GetAllOrders(token)
+
+		// Validate limit
+		limit := limitFlag
+		if limit < 10 || limit > 50 {
+			limit = 50
+		}
+		page := pageFlag
+		if page < 1 {
+			page = 1
+		}
+
+		// All possible states
+		allStates := []string{
+			"DELIVERED", "BACKORDERED", "CANCELED", "NEW", "PROCESSING", "PRE_TRANSIT",
+			"IN_TRANSIT", "RETURNED", "PENDING_RETAILER_CONFIRMATION", "DAMAGED_OR_MISSING",
+		}
+
+		// Default excluded states
+		states := "DELIVERED,BACKORDERED,CANCELED,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING"
+		if statesFlag != "" {
+			// Split by comma, trim spaces, and capitalize
+			userStates := strings.Split(statesFlag, ",")
+			stateSet := make(map[string]struct{})
+			for _, s := range userStates {
+				stateSet[strings.ToUpper(strings.TrimSpace(s))] = struct{}{}
+			}
+			// Exclude everything except the user-provided states
+			var filtered []string
+			for _, state := range allStates {
+				if _, keep := stateSet[state]; !keep {
+					filtered = append(filtered, state)
+				}
+			}
+			states = strings.Join(filtered, ",")
+		}
+
+		resp, err := client.GetAllOrders(token, limit, page, states)
 		if err != nil {
 			return err
 		}
 		var ordersResp Orders
 		if err := json.Unmarshal(resp, &ordersResp); err != nil {
 			return fmt.Errorf("failed to parse orders: %w", err)
+		}
+
+		if statesFlag != "" {
+			allowed := make(map[string]struct{})
+			for _, s := range strings.Split(statesFlag, ",") {
+				allowed[strings.ToUpper(strings.TrimSpace(s))] = struct{}{}
+			}
+			var filtered []Order
+			for _, order := range ordersResp.Orders {
+				if _, ok := allowed[strings.ToUpper(order.State)]; ok {
+					filtered = append(filtered, order)
+				}
+			}
+			ordersResp.Orders = filtered
 		}
 		return ShowOrdersTUI(ordersResp.Orders)
 	},

@@ -54,8 +54,8 @@ func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload, apiTo
 	return nil
 }
 
-func (c *FaireClient) GetAllOrders(apiToken string) ([]byte, error) {
-	url := fmt.Sprintf("%s/orders", c.BaseURL)
+func (c *FaireClient) GetAllOrders(apiToken string, limit int, page int, states string) ([]byte, error) {
+	url := fmt.Sprintf("%s/orders?limit=%d&page=%d&excluded_states=%s", c.BaseURL, limit, page, states)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
