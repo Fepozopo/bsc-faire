@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -24,15 +23,17 @@ func BillingToShippingType(billing string) string {
 	}
 }
 
-func ProcessShipments(csvPath string) error {
+// ProcessShipments now returns processed and failed shipments as slices of ShipmentPayload
+func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
 	// Load .env to get API tokens
 	godotenv.Load()
 	bscToken := os.Getenv("BSC_API_TOKEN")
 	smdToken := os.Getenv("SMD_API_TOKEN")
 
-	shipments, err := ParseShipmentsCSV(csvPath)
-	if err != nil {
-		return err
+	shipments, parseErr := ParseShipmentsCSV(csvPath)
+	if parseErr != nil {
+		err = parseErr
+		return
 	}
 	client := NewFaireClient()
 	for _, s := range shipments {
@@ -54,12 +55,12 @@ func ProcessShipments(csvPath string) error {
 			TrackingCode:   s.TrackingCode,
 			ShippingType:   BillingToShippingType(s.BillingType),
 		}
-		err := client.AddShipment(orderID, payload, apiToken)
-		if err != nil {
-			fmt.Printf("Failed to add shipment for order %s: %v\n", s.PONumber, err)
+		addErr := client.AddShipment(orderID, payload, apiToken)
+		if addErr != nil {
+			failed = append(failed, payload)
 		} else {
-			fmt.Printf("Shipment added for order %s\n", s.PONumber)
+			processed = append(processed, payload)
 		}
 	}
-	return nil
+	return
 }
