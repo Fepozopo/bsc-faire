@@ -19,26 +19,11 @@ func init() {
 	rootCmd.AddCommand(processCmd)
 	rootCmd.AddCommand(ordersCmd)
 	rootCmd.AddCommand(orderCmd)
-	rootCmd.AddCommand(testTuiCmd)
+	rootCmd.AddCommand(testProcessCmd)
 
 	ordersCmd.Flags().IntVar(&limitFlag, "limit", 50, "Max number of orders to return (10-50)")
 	ordersCmd.Flags().IntVar(&pageFlag, "page", 1, "Page number to return (default 1)")
 	ordersCmd.Flags().StringVar(&statesFlag, "states", "", "Comma separated list of states to exclude. If set, will exclude all except the provided state.")
-}
-
-var testTuiCmd = &cobra.Command{
-	Use:   "test-tui",
-	Short: "Preview the processed shipments TUI with sample data",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		processed := []ShipmentPayload{
-			{OrderID: "BXDMJBWXID", MakerCostCents: 1000, Carrier: "UPS", TrackingCode: "1Z999AA10123456784", ShippingType: "SHIP_WITH_FAIRE"},
-			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN"},
-		}
-		failed := []ShipmentPayload{
-			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN"},
-		}
-		return ShowProcessedTUI(processed, failed)
-	},
 }
 
 var processCmd = &cobra.Command{
@@ -170,5 +155,20 @@ var orderCmd = &cobra.Command{
 			return err
 		}
 		return nil
+	},
+}
+
+var testProcessCmd = &cobra.Command{
+	Use:   "test-process",
+	Short: "Preview the processed shipments TUI with sample data",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		processed := []ShipmentPayload{
+			{OrderID: "BXDMJBWXID", MakerCostCents: 1000, Carrier: "UPS", TrackingCode: "1Z999AA10123456784", ShippingType: "SHIP_WITH_FAIRE"},
+			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN"},
+		}
+		failed := []ShipmentPayload{
+			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN"},
+		}
+		return ShowProcessedTUI(processed, failed)
 	},
 }
