@@ -12,7 +12,7 @@ cli:
 # Build GUI (with build tag)
 gui:
 	$(call MAKE_BIN_DIR)
-	go build -tags gui -o bin/$(BINARY_GUI)-native-gui ./cmd/main_gui.go ./cmd/gui.go
+	go build -tags gui -o bin/$(BINARY_GUI)-native ./cmd/main_gui.go ./cmd/gui.go
 
 # Create folder function
 define MAKE_BIN_DIR
@@ -31,7 +31,7 @@ windows-x86_64-gui:
 	@echo "Building GUI for Windows with GOOS=windows, GOARCH=amd64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="zig cc -target x86_64-windows" \
-		go build -tags gui -o bin/$(BINARY_GUI)-windows-x86_64-gui.exe ./cmd/main_gui.go ./cmd/gui.go
+		go build -tags gui -o bin/$(BINARY_GUI)-windows-x86_64.exe ./cmd/main_gui.go ./cmd/gui.go
 
 # Build for Windows (ARM64) CLI
 windows-arm64-cli:
@@ -45,7 +45,7 @@ windows-arm64-gui:
 	@echo "Building GUI for Windows (ARM64) with GOOS=windows, GOARCH=arm64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows" \
-		go build -tags gui -o bin/$(BINARY_GUI)-windows-arm64-gui.exe ./cmd/main_gui.go ./cmd/gui.go
+		go build -tags gui -o bin/$(BINARY_GUI)-windows-arm64.exe ./cmd/main_gui.go ./cmd/gui.go
 
 # Build for Linux (x86_64) CLI
 linux-x86_64-cli:
@@ -59,7 +59,7 @@ linux-x86_64-gui:
 	@echo "Building GUI for Linux with GOOS=linux, GOARCH=amd64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC="zig cc -target x86_64-linux" \
-		go build -tags gui -o bin/$(BINARY_GUI)-linux-x86_64-gui ./cmd/main_gui.go ./cmd/gui.go
+		go build -tags gui -o bin/$(BINARY_GUI)-linux-x86_64 ./cmd/main_gui.go ./cmd/gui.go
 
 # Build for Linux (ARM64) CLI
 linux-arm64-cli:
@@ -73,7 +73,7 @@ linux-arm64-gui:
 	@echo "Building GUI for Linux (ARM64) with GOOS=linux, GOARCH=arm64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux" \
-		go build -tags gui -o bin/$(BINARY_GUI)-linux-arm64-gui ./cmd/main_gui.go ./cmd/gui.go
+		go build -tags gui -o bin/$(BINARY_GUI)-linux-arm64 ./cmd/main_gui.go ./cmd/gui.go
 
 # Build for macOS (ARM64) CLI
 macos-arm64-cli:
@@ -87,7 +87,7 @@ macos-arm64-gui:
 	@echo "Building GUI for macOS (ARM64) with GOOS=darwin, GOARCH=arm64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 CC=clang \
-		go build -tags gui -o bin/$(BINARY_GUI)-macos-arm64-gui ./cmd/main_gui.go ./cmd/gui.go
+		go build -tags gui -o bin/$(BINARY_GUI)-macos-arm64 ./cmd/main_gui.go ./cmd/gui.go
 
 # Combo targets to build both CLI and GUI for each platform/arch
 windows-x86_64: windows-x86_64-cli windows-x86_64-gui
