@@ -8,6 +8,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	apppkg "github.com/Fepozopo/bsc-faire/internal/app"
 	"github.com/joho/godotenv"
@@ -233,16 +234,73 @@ func RunGUI() {
 	// - Exits the application immediately when clicked.
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
+	// Button: Test Process Shipments
+	testProcessBtn := widget.NewButton("Test Process Shipments", func() {
+		// Example processed and failed shipments
+		exampleProcessed := []apppkg.ShipmentPayload{
+			{
+				OrderID:        "ORDER123",
+				MakerCostCents: 1500,
+				Carrier:        "UPS",
+				TrackingCode:   "1Z999AA10123456784",
+				ShippingType:   "Standard",
+			},
+			{
+				OrderID:        "ORDER456",
+				MakerCostCents: 2000,
+				Carrier:        "FedEx",
+				TrackingCode:   "123456789012",
+				ShippingType:   "Express",
+			},
+		}
+		exampleFailed := []apppkg.ShipmentPayload{
+			{
+				OrderID:        "ORDER789",
+				MakerCostCents: 1800,
+				Carrier:        "USPS",
+				TrackingCode:   "9400110200881234567890",
+				ShippingType:   "Standard",
+			},
+		}
+
+		// Use the same formatting function as your real process
+		formatPayloads := func(payloads []apppkg.ShipmentPayload) string {
+			if len(payloads) == 0 {
+				return "  None"
+			}
+			msg := ""
+			for _, p := range payloads {
+				msg += fmt.Sprintf(
+					"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
+					p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
+				)
+			}
+			return msg
+		}
+
+		msg := "Shipments processed successfully!\n\nProcessed Shipments:\n"
+		msg += formatPayloads(exampleProcessed)
+		msg += "\n\nFailed Shipments:\n"
+		msg += formatPayloads(exampleFailed)
+
+		scroll := container.NewVScroll(widget.NewLabel(msg))
+		scroll.SetMinSize(fyne.NewSize(380, 250))
+		dialog.ShowCustom("Test Process Result", "OK", scroll, w)
+	})
+
 	// Set up the main window layout with all buttons and the application label.
 	w.SetContent(container.NewVBox(
 		widget.NewLabel("Faire GUI"),
 		processBtn,
+		widget.NewLabel(""), // Adds a small space
 		ordersBtn,
 		orderBtn,
+		widget.NewLabel(""), // Adds a small space
+		testProcessBtn,
+		layout.NewSpacer(), // Pushes everything below
 		quitBtn,
 	))
-
 	// Set initial window size and start the GUI event loop.
-	w.Resize(fyne.NewSize(400, 300))
+	w.Resize(fyne.NewSize(800, 600))
 	w.ShowAndRun()
 }
