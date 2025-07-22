@@ -89,6 +89,13 @@ macos-arm64-gui:
 	CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 CC=clang \
 		go build -tags gui -o bin/$(BINARY_GUI)-macos-arm64-gui ./cmd/main_gui.go ./cmd/gui.go
 
+# Combo targets to build both CLI and GUI for each platform/arch
+windows-x86_64: windows-x86_64-cli windows-x86_64-gui
+windows-arm64:  windows-arm64-cli  windows-arm64-gui
+linux-x86_64:   linux-x86_64-cli   linux-x86_64-gui
+linux-arm64:    linux-arm64-cli    linux-arm64-gui
+macos-arm64:    macos-arm64-cli    macos-arm64-gui
+
 # Build all CLI and GUI targets for all platforms
 all: cli gui \
 	windows-x86_64-cli windows-x86_64-gui \
