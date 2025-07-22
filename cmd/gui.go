@@ -37,7 +37,12 @@ func RunGUI() {
 
 	// Load .env to get API tokens
 	godotenv.Load()
+	c21Token := os.Getenv("C21_API_TOKEN")
+	ascToken := os.Getenv("ASC_API_TOKEN")
+	bjpToken := os.Getenv("BJP_API_TOKEN")
 	bscToken := os.Getenv("BSC_API_TOKEN")
+	gtgToken := os.Getenv("GTG_API_TOKEN")
+	oatToken := os.Getenv("OAT_API_TOKEN")
 	smdToken := os.Getenv("SMD_API_TOKEN")
 
 	// Button: Process Shipments CSV
@@ -145,13 +150,23 @@ func RunGUI() {
 				saleSource := entry.Text
 				var token string
 				switch saleSource {
-				case "sm":
-					token = smdToken
+				case "21":
+					token = c21Token
+				case "asc":
+					token = ascToken
+				case "bjp":
+					token = bjpToken
 				case "bsc":
 					token = bscToken
+				case "gtg":
+					token = gtgToken
+				case "oat":
+					token = oatToken
+				case "sm":
+					token = smdToken
 				default:
 					// Invalid input, show error
-					dialog.ShowError(fmt.Errorf("invalid sale source: must be 'sm' or 'bsc'"), w)
+					dialog.ShowError(fmt.Errorf("invalid sale source: must be '21', 'asc', 'bjp', 'bsc', 'gtg', 'oat', or 'sm'"), w)
 					return
 				}
 				// Fetch orders asynchronously to avoid blocking the UI

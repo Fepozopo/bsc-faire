@@ -41,24 +41,34 @@ var processCmd = &cobra.Command{
 
 var ordersCmd = &cobra.Command{
 	Use:   "orders [sale_source]",
-	Short: "Get all orders by sale source (sm or bsc)",
+	Short: "Get all orders by sale source (21, asc, bjp, bsc, gtg, oat, smd)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
 		var token string
 		if len(args) == 0 {
-			return fmt.Errorf("sale source is required (sm or bsc)")
+			return fmt.Errorf("sale source is required (21, asc, bjp, bsc, gtg, oat, smd)")
 		} else if len(args) > 1 {
 			return fmt.Errorf("too many arguments, expected 1 (got %d)", len(args))
 		} else {
 			saleSource := args[0]
 			switch saleSource {
-			case "sm":
-				token = os.Getenv("SMD_API_TOKEN")
+			case "21":
+				token = os.Getenv("C21_API_TOKEN")
+			case "asc":
+				token = os.Getenv("ASC_API_TOKEN")
+			case "bjp":
+				token = os.Getenv("BJP_API_TOKEN")
 			case "bsc":
 				token = os.Getenv("BSC_API_TOKEN")
+			case "gtg":
+				token = os.Getenv("GTG_API_TOKEN")
+			case "oat":
+				token = os.Getenv("OAT_API_TOKEN")
+			case "sm":
+				token = os.Getenv("SMD_API_TOKEN")
 			default:
-				return fmt.Errorf("invalid sale source: %s (must be 'sm' or 'bsc')", saleSource)
+				return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or smd)", saleSource)
 			}
 		}
 
@@ -135,12 +145,22 @@ var orderCmd = &cobra.Command{
 		saleSource := args[0]
 		var token string
 		switch saleSource {
-		case "sm":
-			token = os.Getenv("SMD_API_TOKEN")
+		case "21":
+			token = os.Getenv("C21_API_TOKEN")
+		case "asc":
+			token = os.Getenv("ASC_API_TOKEN")
+		case "bjp":
+			token = os.Getenv("BJP_API_TOKEN")
 		case "bsc":
 			token = os.Getenv("BSC_API_TOKEN")
+		case "gtg":
+			token = os.Getenv("GTG_API_TOKEN")
+		case "oat":
+			token = os.Getenv("OAT_API_TOKEN")
+		case "sm":
+			token = os.Getenv("SMD_API_TOKEN")
 		default:
-			return fmt.Errorf("invalid sale source: %s (must be 'sm' or 'bsc')", saleSource)
+			return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or smd)", saleSource)
 		}
 		orderID := args[1]
 		resp, err := client.GetOrderByID(orderID, token)

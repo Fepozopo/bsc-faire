@@ -47,6 +47,16 @@ func ParseShipmentsCSV(path string) ([]Shipment, error) {
 		}
 	}
 
+	validSaleSources := map[string]struct{}{
+		"21":  {},
+		"ASC": {},
+		"BJP": {},
+		"BSC": {},
+		"GTG": {},
+		"OAT": {},
+		"SM":  {},
+	}
+
 	var shipments []Shipment
 	for {
 		record, err := r.Read()
@@ -64,7 +74,7 @@ func ParseShipmentsCSV(path string) ([]Shipment, error) {
 		if recipientCustomerID != "0090671" {
 			continue
 		}
-		if saleSource != "SM" && saleSource != "BSC" {
+		if _, ok := validSaleSources[saleSource]; !ok {
 			continue
 		}
 
