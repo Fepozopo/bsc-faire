@@ -114,7 +114,12 @@ func RunGUI() {
 			if result.err != nil {
 				dialog.ShowError(fmt.Errorf(msg), w)
 			} else {
-				dialog.ShowInformation("Success", msg, w)
+				// Create a scrollable container for the message
+				scroll := container.NewVScroll(widget.NewLabel(msg))
+				scroll.SetMinSize(fyne.NewSize(380, 250)) // Adjust size as needed
+
+				// Show a custom dialog with the scrollable content
+				dialog.ShowCustom("Success", "OK", scroll, w)
 			}
 		})
 	})
