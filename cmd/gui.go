@@ -48,80 +48,81 @@ func RunGUI() {
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
 		openFileWindow(w, func(filePath string, e error) {
 			if e != nil {
-				// Show error if file selection failed or was cancelled
 				dialog.ShowError(e, w)
 				return
 			}
 			if filePath == "" {
-				// No file selected, do nothing
 				return
 			}
 			if len(filePath) < 4 || filePath[len(filePath)-4:] != ".csv" {
-				// Ensure the selected file is a CSV
 				dialog.ShowError(fmt.Errorf("please select a .csv file"), w)
 				return
 			}
-			// Struct for passing results from goroutine
-			type resultStruct struct {
-				processed []apppkg.ShipmentPayload
-				failed    []apppkg.ShipmentPayload
-				err       error
-			}
-			resultCh := make(chan resultStruct)
-			// Process shipments in a goroutine to avoid blocking the UI
-			go func() {
-				processed, failed, err := apppkg.ProcessShipments(filePath)
-				resultCh <- resultStruct{processed, failed, err}
-			}()
-			result := <-resultCh
 
-			// Helper function to format a slice of ShipmentPayloads for display
-			var formatPayloads = func(payloads []apppkg.ShipmentPayload) string {
-				if len(payloads) == 0 {
-					return "  None"
+			// Show dialog with file path and submit button
+			fileLabel := widget.NewLabel(fmt.Sprintf("Selected file: %s", filePath))
+			submitBtn := widget.NewButton("Submit", func() {
+				// Close the dialog (handled by dialog reference below)
+				// Start processing
+				type resultStruct struct {
+					processed []apppkg.ShipmentPayload
+					failed    []apppkg.ShipmentPayload
+					err       error
 				}
-				msg := ""
-				for _, p := range payloads {
-					msg += fmt.Sprintf(
-						"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
-						p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
-					)
-				}
-				return msg
-			}
+				resultCh := make(chan resultStruct)
+				go func() {
+					processed, failed, err := apppkg.ProcessShipments(filePath)
+					resultCh <- resultStruct{processed, failed, err}
+				}()
+				result := <-resultCh
 
-			// Build the result message for the dialog and notification
-			var msg string
-			if result.err != nil {
-				msg = fmt.Sprintf("Failed to process shipments: %v", result.err)
-			} else {
-				msg = "Shipments processed successfully!\n\nProcessed Shipments:\n"
-				msg += formatPayloads(result.processed)
-				msg += "\n\nFailed Shipments:\n"
-				msg += formatPayloads(result.failed)
-			}
-			// Send notification with result summary
-			fyne.CurrentApp().SendNotification(&fyne.Notification{
-				Title: func() string {
-					if result.err != nil {
-						return "Error"
-					} else {
-						return "Success"
+				var formatPayloads = func(payloads []apppkg.ShipmentPayload) string {
+					if len(payloads) == 0 {
+						return "  None"
 					}
-				}(),
-				Content: msg,
-			})
-			// Show dialog with result details
-			if result.err != nil {
-				dialog.ShowError(fmt.Errorf(msg), w)
-			} else {
-				// Create a scrollable container for the message
-				scroll := container.NewVScroll(widget.NewLabel(msg))
-				scroll.SetMinSize(fyne.NewSize(380, 250)) // Adjust size as needed
+					msg := ""
+					for _, p := range payloads {
+						msg += fmt.Sprintf(
+							"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
+							p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
+						)
+					}
+					return msg
+				}
 
-				// Show a custom dialog with the scrollable content
-				dialog.ShowCustom("Success", "OK", scroll, w)
-			}
+				var msg string
+				if result.err != nil {
+					msg = fmt.Sprintf("Failed to process shipments: %v", result.err)
+				} else {
+					msg = "Shipments processed successfully!\n\nProcessed Shipments:\n"
+					msg += formatPayloads(result.processed)
+					msg += "\n\nFailed Shipments:\n"
+					msg += formatPayloads(result.failed)
+				}
+				fyne.CurrentApp().SendNotification(&fyne.Notification{
+					Title: func() string {
+						if result.err != nil {
+							return "Error"
+						} else {
+							return "Success"
+						}
+					}(),
+					Content: msg,
+				})
+				if result.err != nil {
+					dialog.ShowError(fmt.Errorf(msg), w)
+				} else {
+					scroll := container.NewVScroll(widget.NewLabel(msg))
+					scroll.SetMinSize(fyne.NewSize(380, 250))
+					dialog.ShowCustom("Success", "OK", scroll, w)
+				}
+			})
+
+			content := container.NewVBox(
+				fileLabel,
+				submitBtn,
+			)
+			dialog.ShowCustom("Confirm File", "Cancel", content, w)
 		})
 	})
 
@@ -230,9 +231,6 @@ func RunGUI() {
 				dialog.ShowInformation("Order", string(result.resp), w)
 			}, w)
 	})
-	// Button: Quit
-	// - Exits the application immediately when clicked.
-	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	// Button: Test Process Shipments
 	testProcessBtn := widget.NewButton("Test Process Shipments", func() {
@@ -287,6 +285,10 @@ func RunGUI() {
 		scroll.SetMinSize(fyne.NewSize(380, 250))
 		dialog.ShowCustom("Test Process Result", "OK", scroll, w)
 	})
+
+	// Button: Quit
+	// - Exits the application immediately when clicked.
+	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	// Set up the main window layout with all buttons and the application label.
 	w.SetContent(container.NewVBox(
