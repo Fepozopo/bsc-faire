@@ -115,7 +115,7 @@ func RunGUI() {
 					Content: msg,
 				})
 				if result.err != nil {
-					dialog.ShowError(fmt.Errorf(msg), w)
+					dialog.ShowError(fmt.Errorf("%s", msg), w)
 				} else {
 					scroll := container.NewVScroll(widget.NewLabel(msg))
 					scroll.SetMinSize(fyne.NewSize(380, 250))

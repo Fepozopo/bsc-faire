@@ -43,7 +43,7 @@ DOC7,ORDER129,TRACK129,9.00,UPS,Consignee,0090671,SM
 		t.Logf("Shipment %d:\n%s", i+1, b)
 	}
 
-	// Only rows with Sale Source (UDF) == "SM" or "BSC" should be included
+	// Only rows with Sale Source (UDF) == "21", "ASC", "BJP", "BSC", "GTG", "OAT", or "SM" should be included
 	expectedLen := 4 // ORDER123 (SM), ORDER124 (BSC), ORDER127 (BSC), ORDER129 (SM)
 	if len(shipments) != expectedLen {
 		t.Errorf("expected %d shipments, got %d", expectedLen, len(shipments))
