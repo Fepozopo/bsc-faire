@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -134,7 +135,7 @@ func RunGUI() {
 	// Button: Get All Orders
 	// - Prompts the user for a sale source ("sm" or "bsc").
 	// - Fetches all orders for the selected source asynchronously.
-	// - Displays the raw response in a dialog.
+	// - Displays the formatted response in a scrollable dialog.
 	ordersBtn := widget.NewButton("Get All Orders", func() {
 		// Prompt for sale source (sm or bsc)
 		entry := widget.NewEntry()
@@ -176,7 +177,7 @@ func RunGUI() {
 				})
 				go func() {
 					client := apppkg.NewFaireClient()
-					resp, err := client.GetAllOrders(token, 50, 1, "")
+					resp, err := client.GetAllOrders(token, 50, 1, "DELIVERED,BACKORDERED,CANCELED,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING")
 					respCh <- struct {
 						resp []byte
 						err  error
@@ -188,14 +189,22 @@ func RunGUI() {
 					dialog.ShowError(fmt.Errorf("failed to get orders: %v", result.err), w)
 					return
 				}
-				dialog.ShowInformation("Orders", string(result.resp), w)
+				var ordersResp apppkg.Orders
+				if err := json.Unmarshal(result.resp, &ordersResp); err != nil {
+					dialog.ShowError(fmt.Errorf("failed to parse orders: %v", err), w)
+					return
+				}
+				msg := apppkg.FormatOrders(ordersResp.Orders)
+				scroll := container.NewVScroll(widget.NewLabel(msg))
+				scroll.SetMinSize(fyne.NewSize(500, 400))
+				dialog.ShowCustom("Orders", "OK", scroll, w)
 			}, w)
 	})
 
 	// Button: Get Order By ID
 	// - Prompts the user for a sale source ("sm" or "bsc") and an order ID.
 	// - Fetches the order details asynchronously.
-	// - Displays the raw order response in a dialog.
+	// - Displays the formatted order response in a scrollable dialog.
 	orderBtn := widget.NewButton("Get Order By ID", func() {
 		// Prompt for sale source and order ID
 		saleSourceEntry := widget.NewEntry()
@@ -253,7 +262,15 @@ func RunGUI() {
 					dialog.ShowError(fmt.Errorf("failed to get order: %v", result.err), w)
 					return
 				}
-				dialog.ShowInformation("Order", string(result.resp), w)
+				var order apppkg.Order
+				if err := json.Unmarshal(result.resp, &order); err != nil {
+					dialog.ShowError(fmt.Errorf("failed to parse order: %v", err), w)
+					return
+				}
+				msg := apppkg.FormatOrder(order)
+				scroll := container.NewVScroll(widget.NewLabel(msg))
+				scroll.SetMinSize(fyne.NewSize(500, 400))
+				dialog.ShowCustom("Order", "OK", scroll, w)
 			}, w)
 	})
 

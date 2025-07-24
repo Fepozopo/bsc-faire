@@ -29,29 +29,7 @@ func (m orderModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the order details as a string for the TUI.
 func (m orderModel) View() string {
-	created := m.order.CreatedAt.Format("2006-01-02 15:04")
-	retailer := m.order.Address.CompanyName
-	if retailer == "" {
-		retailer = m.order.Address.Name
-	}
-
-	// Calculate total order value in cents
-	var totalCents int
-	for _, item := range m.order.Items {
-		totalCents += item.PriceCents * item.Quantity
-	}
-
-	// Build the order summary string
-	s := fmt.Sprintf(
-		"Order ID: %s\nStatus: %s\nRetailer: %s\nCreated: %s\nTotal: $%.2f\n\nItems:\n",
-		m.order.DisplayID, m.order.State, retailer, created, float64(totalCents)/100,
-	)
-	for _, item := range m.order.Items {
-		s += fmt.Sprintf("  - %s (%s) x%d ($%.2f each)\n",
-			item.ProductName, item.Sku, item.Quantity, float64(item.PriceCents)/100)
-	}
-	s += "\nPress 'q' or 'esc' to quit."
-	return s
+	return FormatOrder(m.order) + "\nPress 'q' or 'esc' to quit."
 }
 
 // ShowOrderTUI launches a Bubble Tea TUI to display a single order.
