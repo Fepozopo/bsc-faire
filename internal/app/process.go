@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -40,23 +41,25 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 		err = parseErr
 		return
 	}
+	fmt.Printf("INFO: Parsed %d shipments from CSV\n", len(shipments))
 	client := NewFaireClient()
-	for _, s := range shipments {
+	for i, s := range shipments {
+		fmt.Printf("INFO: Processing shipment %d: %+v\n", i+1, s)
 		var apiToken string
 		switch s.SaleSource {
 		case "21":
 			apiToken = c21Token
-		case "asc":
+		case "ASC":
 			apiToken = ascToken
-		case "bjp":
+		case "BJP":
 			apiToken = bjpToken
-		case "bsc":
+		case "BSC":
 			apiToken = bscToken
-		case "gtg":
+		case "GTG":
 			apiToken = gtgToken
-		case "oat":
+		case "OAT":
 			apiToken = oatToken
-		case "sm":
+		case "SM":
 			apiToken = smdToken
 		default:
 			// Should not happen due to ParseShipmentsCSV, but skip just in case
@@ -74,10 +77,13 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 		}
 		addErr := client.AddShipment(payload, apiToken)
 		if addErr != nil {
+			fmt.Printf("ERROR: Failed to add shipment: %v\n", addErr)
 			failed = append(failed, payload)
 		} else {
+			fmt.Printf("INFO: Successfully processed shipment\n")
 			processed = append(processed, payload)
 		}
 	}
+	fmt.Printf("INFO: Finished processing. %d processed, %d failed\n", len(processed), len(failed))
 	return
 }
