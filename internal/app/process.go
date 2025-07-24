@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -60,7 +59,8 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 		case "sm":
 			apiToken = smdToken
 		default:
-			return nil, nil, fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or smd)", s.SaleSource)
+			// Should not happen due to ParseShipmentsCSV, but skip just in case
+			continue
 		}
 		orderID := DisplayIDToOrderID(s.PONumber)
 		payload := ShipmentPayload{
