@@ -33,8 +33,8 @@ func NewFaireClient() *FaireClient {
 	}
 }
 
-func (c *FaireClient) AddShipment(orderID string, payload ShipmentPayload, apiToken string) error {
-	url := fmt.Sprintf("%s/orders/%s/shipments", c.BaseURL, orderID)
+func (c *FaireClient) AddShipment(payload ShipmentPayload, apiToken string) error {
+	url := fmt.Sprintf("%s/orders/%s/shipments", c.BaseURL, payload.OrderID)
 	body, _ := json.Marshal(ShipmentRequest{Shipments: []ShipmentPayload{payload}})
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {

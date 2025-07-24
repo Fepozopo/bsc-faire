@@ -70,7 +70,7 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 			TrackingCode:   s.TrackingCode,
 			ShippingType:   BillingToShippingType(s.BillingType),
 		}
-		addErr := client.AddShipment(orderID, payload, apiToken)
+		addErr := client.AddShipment(payload, apiToken)
 		if addErr != nil {
 			failed = append(failed, payload)
 		} else {

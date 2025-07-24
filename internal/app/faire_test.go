@@ -96,7 +96,7 @@ func TestAddShipment(t *testing.T) {
 		BaseURL: server.URL,
 	}
 	for i, payload := range payloads {
-		err = client.AddShipment(payload.OrderID, payload, "dummy-token")
+		err = client.AddShipment(payload, "dummy-token")
 		if err != nil {
 			t.Fatalf("AddShipment failed for shipment %d: %v", i+1, err)
 		}
