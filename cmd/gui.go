@@ -139,7 +139,7 @@ func RunGUI() {
 	ordersBtn := widget.NewButton("Get All Orders", func() {
 		// Prompt for sale source (sm or bsc)
 		entry := widget.NewEntry()
-		entry.SetPlaceHolder("Enter sale source: sm or bsc")
+		entry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
 		dialog.ShowForm("Get All Orders", "Get", "Cancel",
 			[]*widget.FormItem{
 				widget.NewFormItem("Sale Source", entry),

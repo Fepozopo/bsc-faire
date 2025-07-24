@@ -41,13 +41,13 @@ var processCmd = &cobra.Command{
 
 var ordersCmd = &cobra.Command{
 	Use:   "orders [sale_source]",
-	Short: "Get all orders by sale source (21, asc, bjp, bsc, gtg, oat, smd)",
+	Short: "Get all orders by sale source (21, asc, bjp, bsc, gtg, oat, sm)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
 		var token string
 		if len(args) == 0 {
-			return fmt.Errorf("sale source is required (21, asc, bjp, bsc, gtg, oat, smd)")
+			return fmt.Errorf("sale source is required (21, asc, bjp, bsc, gtg, oat, sm)")
 		} else if len(args) > 1 {
 			return fmt.Errorf("too many arguments, expected 1 (got %d)", len(args))
 		} else {
@@ -68,7 +68,7 @@ var ordersCmd = &cobra.Command{
 			case "sm":
 				token = os.Getenv("SMD_API_TOKEN")
 			default:
-				return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or smd)", saleSource)
+				return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
 			}
 		}
 
@@ -160,7 +160,7 @@ var orderCmd = &cobra.Command{
 		case "sm":
 			token = os.Getenv("SMD_API_TOKEN")
 		default:
-			return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or smd)", saleSource)
+			return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
 		}
 		orderID := args[1]
 		resp, err := client.GetOrderByID(orderID, token)
@@ -183,11 +183,11 @@ var testProcessCmd = &cobra.Command{
 	Short: "Preview the processed shipments TUI with sample data",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		processed := []ShipmentPayload{
-			{OrderID: "BXDMJBWXID", MakerCostCents: 1000, Carrier: "UPS", TrackingCode: "1Z999AA10123456784", ShippingType: "SHIP_WITH_FAIRE"},
-			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN"},
+			{OrderID: "BXDMJBWXID", MakerCostCents: 1000, Carrier: "UPS", TrackingCode: "1Z999AA10123456784", ShippingType: "SHIP_WITH_FAIRE", SaleSource: "21"},
+			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "asc"},
 		}
 		failed := []ShipmentPayload{
-			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN"},
+			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "bsc"},
 		}
 		return ShowProcessedTUI(processed, failed)
 	},
