@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -27,7 +28,12 @@ func BillingToShippingType(billing string) string {
 func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
 	// Load .env to get API tokens
 	godotenv.Load()
+	c21Token := os.Getenv("C21_API_TOKEN")
+	ascToken := os.Getenv("ASC_API_TOKEN")
+	bjpToken := os.Getenv("BJP_API_TOKEN")
 	bscToken := os.Getenv("BSC_API_TOKEN")
+	gtgToken := os.Getenv("GTG_API_TOKEN")
+	oatToken := os.Getenv("OAT_API_TOKEN")
 	smdToken := os.Getenv("SMD_API_TOKEN")
 
 	shipments, parseErr := ParseShipmentsCSV(csvPath)
@@ -39,13 +45,22 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 	for _, s := range shipments {
 		var apiToken string
 		switch s.SaleSource {
-		case "SM":
-			apiToken = smdToken
-		case "BSC":
+		case "21":
+			apiToken = c21Token
+		case "asc":
+			apiToken = ascToken
+		case "bjp":
+			apiToken = bjpToken
+		case "bsc":
 			apiToken = bscToken
+		case "gtg":
+			apiToken = gtgToken
+		case "oat":
+			apiToken = oatToken
+		case "sm":
+			apiToken = smdToken
 		default:
-			// Should not happen due to ParseShipmentsCSV, but skip just in case
-			continue
+			return nil, nil, fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or smd)", s.SaleSource)
 		}
 		orderID := DisplayIDToOrderID(s.PONumber)
 		payload := ShipmentPayload{
