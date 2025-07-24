@@ -133,11 +133,11 @@ func RunGUI() {
 	})
 
 	// Button: Get All Orders
-	// - Prompts the user for a sale source ("sm" or "bsc").
+	// - Prompts the user for a sale source ("21", "asc", "bjp", "bsc", "gtg", "oat", or "sm").
 	// - Fetches all orders for the selected source asynchronously.
 	// - Displays the formatted response in a scrollable dialog.
 	ordersBtn := widget.NewButton("Get All Orders", func() {
-		// Prompt for sale source (sm or bsc)
+		// Prompt for sale source ("21", "asc", "bjp", "bsc", "gtg", "oat", or "sm")
 		entry := widget.NewEntry()
 		entry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
 		dialog.ShowForm("Get All Orders", "Get", "Cancel",
