@@ -215,13 +215,23 @@ func RunGUI() {
 				orderID := orderIDEntry.Text
 				var token string
 				switch saleSource {
-				case "sm":
-					token = smdToken
+				case "21":
+					token = c21Token
+				case "asc":
+					token = ascToken
+				case "bjp":
+					token = bjpToken
 				case "bsc":
 					token = bscToken
+				case "gtg":
+					token = gtgToken
+				case "oat":
+					token = oatToken
+				case "sm":
+					token = smdToken
 				default:
 					// Invalid input, show error
-					dialog.ShowError(fmt.Errorf("invalid sale source: must be 'sm' or 'bsc'"), w)
+					dialog.ShowError(fmt.Errorf("invalid sale source: must be '21', 'asc', 'bjp', 'bsc', 'gtg', 'oat', or 'sm'"), w)
 					return
 				}
 				// Fetch order asynchronously to avoid blocking the UI
