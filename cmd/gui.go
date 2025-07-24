@@ -88,8 +88,8 @@ func RunGUI() {
 					msg := ""
 					for _, p := range payloads {
 						msg += fmt.Sprintf(
-							"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
-							p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
+							"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
+							p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
 						)
 					}
 					return msg
@@ -199,7 +199,7 @@ func RunGUI() {
 	orderBtn := widget.NewButton("Get Order By ID", func() {
 		// Prompt for sale source and order ID
 		saleSourceEntry := widget.NewEntry()
-		saleSourceEntry.SetPlaceHolder("sm or bsc")
+		saleSourceEntry.SetPlaceHolder("Sale Source (21, asc, bjp, bsc, gtg, oat, sm)")
 		orderIDEntry := widget.NewEntry()
 		orderIDEntry.SetPlaceHolder("Order ID (Display ID)")
 		dialog.ShowForm("Get Order By ID", "Get", "Cancel",
@@ -267,6 +267,7 @@ func RunGUI() {
 				Carrier:        "UPS",
 				TrackingCode:   "1Z999AA10123456784",
 				ShippingType:   "Standard",
+				SaleSource:     "SM",
 			},
 			{
 				OrderID:        "ORDER456",
@@ -274,6 +275,7 @@ func RunGUI() {
 				Carrier:        "FedEx",
 				TrackingCode:   "123456789012",
 				ShippingType:   "Express",
+				SaleSource:     "BSC",
 			},
 		}
 		exampleFailed := []apppkg.ShipmentPayload{
@@ -283,6 +285,7 @@ func RunGUI() {
 				Carrier:        "USPS",
 				TrackingCode:   "9400110200881234567890",
 				ShippingType:   "Standard",
+				SaleSource:     "21",
 			},
 		}
 
@@ -294,8 +297,8 @@ func RunGUI() {
 			msg := ""
 			for _, p := range payloads {
 				msg += fmt.Sprintf(
-					"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
-					p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
+					"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
+					p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
 				)
 			}
 			return msg

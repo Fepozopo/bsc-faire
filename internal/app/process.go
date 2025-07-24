@@ -63,12 +63,14 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 			continue
 		}
 		orderID := DisplayIDToOrderID(s.PONumber)
+		billingType := BillingToShippingType(s.BillingType)
 		payload := ShipmentPayload{
 			OrderID:        orderID,
 			MakerCostCents: s.MakerCostCents,
 			Carrier:        s.Carrier,
 			TrackingCode:   s.TrackingCode,
-			ShippingType:   BillingToShippingType(s.BillingType),
+			ShippingType:   billingType,
+			SaleSource:     s.SaleSource,
 		}
 		addErr := client.AddShipment(payload, apiToken)
 		if addErr != nil {
