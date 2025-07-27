@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -26,6 +27,21 @@ func BillingToShippingType(billing string) string {
 
 // ProcessShipments now returns processed and failed shipments as slices of ShipmentPayload
 func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
+	// Ensure logs directory exists
+	logDir := "logs"
+	if mkErr := os.MkdirAll(logDir, 0755); mkErr != nil {
+		err = fmt.Errorf("failed to create logs directory: %w", mkErr)
+		return
+	}
+	// Create log file with timestamp
+	logFileName := fmt.Sprintf("%s/%s.txt", logDir, time.Now().Format("20060102_150405"))
+	logFile, fileErr := os.Create(logFileName)
+	if fileErr != nil {
+		err = fmt.Errorf("failed to create log file: %w", fileErr)
+		return
+	}
+	defer logFile.Close()
+
 	// Load .env to get API tokens
 	godotenv.Load()
 	c21Token := os.Getenv("C21_API_TOKEN")
@@ -41,10 +57,10 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 		err = parseErr
 		return
 	}
-	fmt.Printf("INFO: Parsed %d shipments from CSV\n", len(shipments))
+	fmt.Fprintf(logFile, "INFO: Parsed %d shipments from CSV\n", len(shipments))
 	client := NewFaireClient()
 	for i, s := range shipments {
-		fmt.Printf("INFO: Processing shipment %d: %+v\n", i+1, s)
+		fmt.Fprintf(logFile, "INFO: Processing shipment %d: %+v\n", i+1, s)
 		var apiToken string
 		switch s.SaleSource {
 		case "21":
@@ -77,13 +93,13 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 		}
 		addErr := client.AddShipment(payload, apiToken)
 		if addErr != nil {
-			fmt.Printf("ERROR: Failed to add shipment: %v\n", addErr)
+			fmt.Fprintf(logFile, "ERROR: Failed to add shipment: %v\n", addErr)
 			failed = append(failed, payload)
 		} else {
-			fmt.Printf("INFO: Successfully processed shipment\n")
+			fmt.Fprintf(logFile, "INFO: Successfully processed shipment\n")
 			processed = append(processed, payload)
 		}
 	}
-	fmt.Printf("INFO: Finished processing. %d processed, %d failed\n", len(processed), len(failed))
+	fmt.Fprintf(logFile, "INFO: Finished processing. %d processed, %d failed\n", len(processed), len(failed))
 	return
 }

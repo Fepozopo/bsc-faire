@@ -184,10 +184,10 @@ var testProcessCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		processed := []ShipmentPayload{
 			{OrderID: "BXDMJBWXID", MakerCostCents: 1000, Carrier: "UPS", TrackingCode: "1Z999AA10123456784", ShippingType: "SHIP_WITH_FAIRE", SaleSource: "21"},
-			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "asc"},
+			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "ASC"},
 		}
 		failed := []ShipmentPayload{
-			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "bsc"},
+			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "BSC"},
 		}
 		return ShowProcessedTUI(processed, failed)
 	},
