@@ -1,3 +1,5 @@
 .env
 csv/
 bin/
+logs/
+internal/app/logs

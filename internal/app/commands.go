@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,13 +14,17 @@ var (
 	limitFlag  int
 	pageFlag   int
 	statesFlag string
+	mockFlag   bool
+	failOnFlag string
 )
 
 func init() {
 	rootCmd.AddCommand(processCmd)
 	rootCmd.AddCommand(ordersCmd)
 	rootCmd.AddCommand(orderCmd)
-	rootCmd.AddCommand(testProcessCmd)
+
+	processCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
+	processCmd.Flags().StringVar(&failOnFlag, "fail-on", "", "Comma-separated list of shipment indices to fail (mock only)")
 
 	ordersCmd.Flags().IntVar(&limitFlag, "limit", 50, "Max number of orders to return (10-50)")
 	ordersCmd.Flags().IntVar(&pageFlag, "page", 1, "Page number to return (default 1)")
@@ -31,7 +36,21 @@ var processCmd = &cobra.Command{
 	Short: "Process shipments from a CSV file and add them to Faire orders",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		processed, failed, err := ProcessShipments(args[0])
+		var client FaireClientInterface
+		if mockFlag {
+			failMap := map[int]bool{}
+			if failOnFlag != "" {
+				for _, s := range strings.Split(failOnFlag, ",") {
+					if idx, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
+						failMap[idx] = true
+					}
+				}
+			}
+			client = &MockFaireClient{FailOnCall: failMap}
+		} else {
+			client = NewFaireClient()
+		}
+		processed, failed, err := ProcessShipments(args[0], client)
 		if err != nil {
 			return err
 		}
@@ -175,20 +194,5 @@ var orderCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
-}
-
-var testProcessCmd = &cobra.Command{
-	Use:   "test-process",
-	Short: "Preview the processed shipments TUI with sample data",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		processed := []ShipmentPayload{
-			{OrderID: "BXDMJBWXID", MakerCostCents: 1000, Carrier: "UPS", TrackingCode: "1Z999AA10123456784", ShippingType: "SHIP_WITH_FAIRE", SaleSource: "21"},
-			{OrderID: "ABCD1234", MakerCostCents: 2000, Carrier: "FedEx", TrackingCode: "123456789", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "ASC"},
-		}
-		failed := []ShipmentPayload{
-			{OrderID: "FAILED001", MakerCostCents: 3000, Carrier: "DHL", TrackingCode: "DHLTRACK001", ShippingType: "SHIP_ON_YOUR_OWN", SaleSource: "BSC"},
-		}
-		return ShowProcessedTUI(processed, failed)
 	},
 }

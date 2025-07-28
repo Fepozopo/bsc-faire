@@ -26,7 +26,8 @@ func BillingToShippingType(billing string) string {
 }
 
 // ProcessShipments now returns processed and failed shipments as slices of ShipmentPayload
-func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
+// and accepts a FaireClientInterface for testability.
+func ProcessShipments(csvPath string, client FaireClientInterface) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
 	// Ensure logs directory exists
 	logDir := "logs"
 	if mkErr := os.MkdirAll(logDir, 0755); mkErr != nil {
@@ -58,7 +59,6 @@ func ProcessShipments(csvPath string) (processed []ShipmentPayload, failed []Shi
 		return
 	}
 	fmt.Fprintf(logFile, "INFO: Parsed %d shipments from CSV\n", len(shipments))
-	client := NewFaireClient()
 	for i, s := range shipments {
 		fmt.Fprintf(logFile, "INFO: Processing shipment %d: %+v\n", i+1, s)
 		var apiToken string

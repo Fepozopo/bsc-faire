@@ -14,6 +14,11 @@ type FaireClient struct {
 	BaseURL string
 }
 
+// FaireClientInterface allows mocking of FaireClient for testing
+type FaireClientInterface interface {
+	AddShipment(payload ShipmentPayload, apiToken string) error
+}
+
 type ShipmentRequest struct {
 	Shipments []ShipmentPayload `json:"shipments"`
 }

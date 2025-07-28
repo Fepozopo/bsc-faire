@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
@@ -45,6 +47,8 @@ func RunGUI() {
 	gtgToken := os.Getenv("GTG_API_TOKEN")
 	oatToken := os.Getenv("OAT_API_TOKEN")
 	smdToken := os.Getenv("SMD_API_TOKEN")
+	mock := os.Getenv("FAIRE_USE_MOCK")
+	mockFails := os.Getenv("FAIRE_MOCK_FAILS")
 
 	// Button: Process Shipments CSV
 	// - Opens a file dialog for the user to select a CSV file containing shipment data.
@@ -77,7 +81,22 @@ func RunGUI() {
 				}
 				resultCh := make(chan resultStruct)
 				go func() {
-					processed, failed, err := apppkg.ProcessShipments(filePath)
+					var client apppkg.FaireClientInterface
+					if mock == "1" {
+						failMap := map[int]bool{}
+						failEnv := mockFails // e.g., "2,4"
+						if failEnv != "" {
+							for _, s := range strings.Split(failEnv, ",") {
+								if idx, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
+									failMap[idx] = true
+								}
+							}
+						}
+						client = &apppkg.MockFaireClient{FailOnCall: failMap}
+					} else {
+						client = apppkg.NewFaireClient()
+					}
+					processed, failed, err := apppkg.ProcessShipments(filePath, client)
 					resultCh <- resultStruct{processed, failed, err}
 				}()
 				result := <-resultCh
@@ -274,63 +293,6 @@ func RunGUI() {
 			}, w)
 	})
 
-	// Button: Test Process Shipments
-	testProcessBtn := widget.NewButton("Test Process Shipments", func() {
-		// Example processed and failed shipments
-		exampleProcessed := []apppkg.ShipmentPayload{
-			{
-				OrderID:        "ORDER123",
-				MakerCostCents: 1500,
-				Carrier:        "UPS",
-				TrackingCode:   "1Z999AA10123456784",
-				ShippingType:   "Standard",
-				SaleSource:     "SM",
-			},
-			{
-				OrderID:        "ORDER456",
-				MakerCostCents: 2000,
-				Carrier:        "FedEx",
-				TrackingCode:   "123456789012",
-				ShippingType:   "Express",
-				SaleSource:     "BSC",
-			},
-		}
-		exampleFailed := []apppkg.ShipmentPayload{
-			{
-				OrderID:        "ORDER789",
-				MakerCostCents: 1800,
-				Carrier:        "USPS",
-				TrackingCode:   "9400110200881234567890",
-				ShippingType:   "Standard",
-				SaleSource:     "21",
-			},
-		}
-
-		// Use the same formatting function as your real process
-		formatPayloads := func(payloads []apppkg.ShipmentPayload) string {
-			if len(payloads) == 0 {
-				return "  None"
-			}
-			msg := ""
-			for _, p := range payloads {
-				msg += fmt.Sprintf(
-					"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
-					p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
-				)
-			}
-			return msg
-		}
-
-		msg := "Shipments processed successfully!\n\nProcessed Shipments:\n"
-		msg += formatPayloads(exampleProcessed)
-		msg += "\n\nFailed Shipments:\n"
-		msg += formatPayloads(exampleFailed)
-
-		scroll := container.NewVScroll(widget.NewLabel(msg))
-		scroll.SetMinSize(fyne.NewSize(380, 250))
-		dialog.ShowCustom("Test Process Result", "OK", scroll, w)
-	})
-
 	// Button: Quit
 	// - Exits the application immediately when clicked.
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
@@ -343,8 +305,7 @@ func RunGUI() {
 		ordersBtn,
 		orderBtn,
 		widget.NewLabel(""), // Adds a small space
-		testProcessBtn,
-		layout.NewSpacer(), // Pushes everything below
+		layout.NewSpacer(),  // Pushes everything below
 		quitBtn,
 	))
 	// Set initial window size and start the GUI event loop.
