@@ -15,7 +15,7 @@ var (
 	pageFlag   int
 	statesFlag string
 	mockFlag   bool
-	failOnFlag string
+	failsFlag  string
 )
 
 func init() {
@@ -24,7 +24,7 @@ func init() {
 	rootCmd.AddCommand(orderCmd)
 
 	processCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
-	processCmd.Flags().StringVar(&failOnFlag, "fail-on", "", "Comma-separated list of shipment indices to fail (mock only)")
+	processCmd.Flags().StringVar(&failsFlag, "fails", "", "Comma-separated list of shipment indices to fail (mock only)")
 
 	ordersCmd.Flags().IntVar(&limitFlag, "limit", 50, "Max number of orders to return (10-50)")
 	ordersCmd.Flags().IntVar(&pageFlag, "page", 1, "Page number to return (default 1)")
@@ -39,8 +39,8 @@ var processCmd = &cobra.Command{
 		var client FaireClientInterface
 		if mockFlag {
 			failMap := map[int]bool{}
-			if failOnFlag != "" {
-				for _, s := range strings.Split(failOnFlag, ",") {
+			if failsFlag != "" {
+				for _, s := range strings.Split(failsFlag, ",") {
 					if idx, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
 						failMap[idx] = true
 					}
