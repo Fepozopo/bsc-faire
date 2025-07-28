@@ -101,7 +101,7 @@ func RunGUI() {
 				}()
 				result := <-resultCh
 
-				var formatPayloads = func(payloads []apppkg.ShipmentPayload) string {
+				var formatPayloads = func(payloads []apppkg.ShipmentPayload, showError bool) string {
 					if len(payloads) == 0 {
 						return "  None"
 					}
@@ -111,18 +111,27 @@ func RunGUI() {
 							"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
 							p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
 						)
+						if showError && p.ErrorMsg != "" {
+							msg += fmt.Sprintf("    Error: %s\n", p.ErrorMsg)
+						}
 					}
 					return msg
 				}
 
+				total := len(result.processed) + len(result.failed)
+				successful := len(result.processed)
+				failed := len(result.failed)
+
 				var msg string
 				if result.err != nil {
-					msg = fmt.Sprintf("Failed to process shipments: %v", result.err)
+					msg = fmt.Sprintf("Processed %d shipments: %d successful, %d failed\n\nFailed to process shipments: %v", total, successful, failed, result.err)
 				} else {
-					msg = "Shipments processed successfully!\n\nProcessed Shipments:\n"
-					msg += formatPayloads(result.processed)
-					msg += "\n\nFailed Shipments:\n"
-					msg += formatPayloads(result.failed)
+					summary := fmt.Sprintf("Processed %d shipments: %d successful, %d failed\n\n", total, successful, failed)
+					msg = summary
+					msg += "Failed Shipments:\n"
+					msg += formatPayloads(result.failed, true)
+					msg += "\n\nProcessed Shipments:\n"
+					msg += formatPayloads(result.processed, false)
 				}
 				fyne.CurrentApp().SendNotification(&fyne.Notification{
 					Title: func() string {

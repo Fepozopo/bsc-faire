@@ -30,6 +30,7 @@ type ShipmentPayload struct {
 	TrackingCode   string `json:"tracking_code"`
 	ShippingType   string `json:"shipping_type"`
 	SaleSource     string `json:"sale_source"`
+	ErrorMsg       string `json:"error_msg"`
 }
 
 func NewFaireClient() *FaireClient {

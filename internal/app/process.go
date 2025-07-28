@@ -94,6 +94,7 @@ func ProcessShipments(csvPath string, client FaireClientInterface) (processed []
 		addErr := client.AddShipment(payload, apiToken)
 		if addErr != nil {
 			fmt.Fprintf(logFile, "ERROR: Failed to add shipment: %v\n", addErr)
+			payload.ErrorMsg = addErr.Error() // Attach error message to payload
 			failed = append(failed, payload)
 		} else {
 			fmt.Fprintf(logFile, "INFO: Successfully processed shipment\n")
