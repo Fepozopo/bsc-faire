@@ -106,8 +106,10 @@ all: cli gui \
 
 # Clean target to remove generated binaries and bin folder if needed
 clean:
-	@echo "Cleaning generated binaries..."
-	@rm -rf bin
+	@echo "Cleaning generated binaries and logs..."
+	@rm -rf logs 2>/dev/null
+	@rm -rf internal/app/logs 2>/dev/null
+	@rm -rf bin 2>/dev/null
 
 .PHONY: cli gui \
 	windows-x86_64-cli windows-x86_64-gui \
