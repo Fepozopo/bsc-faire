@@ -72,14 +72,12 @@ func RunGUI() {
 			// Show dialog with file path and submit button
 			fileLabel := widget.NewLabel(fmt.Sprintf("Selected file: %s", filePath))
 			submitBtn := widget.NewButton("Submit", func() {
-				// Close the dialog (handled by dialog reference below)
-				// Start processing
-				type resultStruct struct {
-					processed []apppkg.ShipmentPayload
-					failed    []apppkg.ShipmentPayload
-					err       error
-				}
-				resultCh := make(chan resultStruct)
+				// Show progress bar dialog
+				progress := widget.NewProgressBarInfinite()
+				progressLabel := widget.NewLabel("Processing shipments...")
+				progressDialog := dialog.NewCustom("Processing", "Cancel", container.NewVBox(progressLabel, progress), w)
+				progressDialog.Show()
+
 				go func() {
 					var client apppkg.FaireClientInterface
 					if mock == "1" {
@@ -97,59 +95,61 @@ func RunGUI() {
 						client = apppkg.NewFaireClient()
 					}
 					processed, failed, err := apppkg.ProcessShipments(filePath, client)
-					resultCh <- resultStruct{processed, failed, err}
-				}()
-				result := <-resultCh
 
-				var formatPayloads = func(payloads []apppkg.ShipmentPayload, showError bool) string {
-					if len(payloads) == 0 {
-						return "  None"
-					}
-					msg := ""
-					for _, p := range payloads {
-						msg += fmt.Sprintf(
-							"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
-							p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
-						)
-						if showError && p.ErrorMsg != "" {
-							msg += fmt.Sprintf("    Error: %s\n", p.ErrorMsg)
+					fyne.Do(func() {
+						var formatPayloads = func(payloads []apppkg.ShipmentPayload, showError bool) string {
+							if len(payloads) == 0 {
+								return "  None"
+							}
+							msg := ""
+							for _, p := range payloads {
+								msg += fmt.Sprintf(
+									"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
+									p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
+								)
+								if showError && p.ErrorMsg != "" {
+									msg += fmt.Sprintf("    Error: %s\n", p.ErrorMsg)
+								}
+							}
+							return msg
 						}
-					}
-					return msg
-				}
 
-				total := len(result.processed) + len(result.failed)
-				successful := len(result.processed)
-				failed := len(result.failed)
+						total := len(processed) + len(failed)
+						successful := len(processed)
+						failedCount := len(failed)
 
-				var msg string
-				if result.err != nil {
-					msg = fmt.Sprintf("Processed %d shipments: %d successful, %d failed\n\nFailed to process shipments: %v", total, successful, failed, result.err)
-				} else {
-					summary := fmt.Sprintf("Processed %d shipments: %d successful, %d failed\n\n", total, successful, failed)
-					msg = summary
-					msg += "Failed Shipments:\n"
-					msg += formatPayloads(result.failed, true)
-					msg += "\n\nProcessed Shipments:\n"
-					msg += formatPayloads(result.processed, false)
-				}
-				fyne.CurrentApp().SendNotification(&fyne.Notification{
-					Title: func() string {
-						if result.err != nil {
-							return "Error"
+						var msg string
+						if err != nil {
+							msg = fmt.Sprintf("Processed %d shipments: %d successful, %d failed\n\nFailed to process shipments: %v", total, successful, failedCount, err)
 						} else {
-							return "Success"
+							summary := fmt.Sprintf("Processed %d shipments: %d successful, %d failed\n\n", total, successful, failedCount)
+							msg = summary
+							msg += "Failed Shipments:\n"
+							msg += formatPayloads(failed, true)
+							msg += "\n\nProcessed Shipments:\n"
+							msg += formatPayloads(processed, false)
 						}
-					}(),
-					Content: msg,
-				})
-				if result.err != nil {
-					dialog.ShowError(fmt.Errorf("%s", msg), w)
-				} else {
-					scroll := container.NewVScroll(widget.NewLabel(msg))
-					scroll.SetMinSize(fyne.NewSize(380, 250))
-					dialog.ShowCustom("Success", "OK", scroll, w)
-				}
+
+						fyne.CurrentApp().SendNotification(&fyne.Notification{
+							Title: func() string {
+								if err != nil {
+									return "Error"
+								} else {
+									return "Success"
+								}
+							}(),
+							Content: msg,
+						})
+						progressDialog.Hide()
+						if err != nil {
+							dialog.ShowError(fmt.Errorf("%s", msg), w)
+						} else {
+							scroll := container.NewVScroll(widget.NewLabel(msg))
+							scroll.SetMinSize(fyne.NewSize(380, 250))
+							dialog.ShowCustom("Success", "OK", scroll, w)
+						}
+					})
+				}()
 			})
 
 			content := container.NewVBox(
