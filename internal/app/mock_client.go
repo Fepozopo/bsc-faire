@@ -1,5 +1,7 @@
 package app
 
+import "time"
+
 // MockFaireClient implements FaireClientInterface for testing and development
 type MockFaireClient struct {
 	CallCount  int
@@ -7,6 +9,7 @@ type MockFaireClient struct {
 }
 
 func (m *MockFaireClient) AddShipment(payload ShipmentPayload, apiToken string) error {
+	time.Sleep(300 * time.Millisecond) // Simulate network/processing delay
 	m.CallCount++
 	if m.FailOnCall != nil && m.FailOnCall[m.CallCount] {
 		return &MockError{"simulated failure"}
