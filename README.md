@@ -6,9 +6,11 @@
 This project includes both a command-line interface (CLI) and a graphical user interface (GUI) built with the [Fyne](https://fyne.io/) framework, making it accessible for both technical and non-technical users.
 
 
+
 ### Features
 
-- **Process Shipments CSV:** Select or specify a CSV file and process shipments, with detailed success/error feedback. Failed shipments are shown in the results.
+- **Process Shipments CSV:** Select or specify a CSV file and process shipments, with detailed success/error feedback. Failed shipments are shown in the results. The GUI now displays a progress bar during shipment processing for a more responsive user experience.
+- **Responsive Progress Bar (GUI):** When processing shipments, the GUI shows a modal progress bar dialog until processing is complete, ensuring users see feedback even for long-running operations.
 - **Get All Orders:** Enter a sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) to fetch and display all orders. Advanced filtering by state, limit, and page is supported in CLI.
 - **Get Order By ID:** Enter a sale source and order ID to fetch and display a specific order.
 - **Test/Mock Mode:** CLI and GUI support mock processing for testing, with options to simulate failures.
@@ -16,6 +18,23 @@ This project includes both a command-line interface (CLI) and a graphical user i
 - **Native File Dialog & Notifications (GUI):** CSV selection uses the system's native file dialog, and results are shown in scrollable dialogs and system notifications.
 - **.env Support (GUI):** The GUI loads API tokens and mock settings from a `.env` file if present.
 - **Multi-Platform Builds:** Build and run on Windows, Linux, and macOS (ARM/x86_64) using provided Makefile targets. Binaries are named with platform/arch suffixes (e.g., `faire-cli-linux-x86_64`).
+### Developer Notes (Fyne v2.6+)
+
+#### Thread-Safe UI Updates
+
+All Fyne UI updates from goroutines (such as hiding dialogs, showing results, or sending notifications) are performed using `fyne.Do(func() { ... })` as required by Fyne v2.6 and newer. This ensures thread safety and prevents runtime errors. See [Fyne Goroutine Docs](https://docs.fyne.io/started/goroutines.html) for details.
+
+Example:
+
+```
+go func() {
+	// ...long-running work...
+	fyne.Do(func() {
+		dialog.ShowCustom(...)
+		// ...other UI updates...
+	})
+}()
+```
 
 
 ### Prerequisites
