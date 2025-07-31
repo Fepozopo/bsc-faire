@@ -69,9 +69,21 @@ func RunGUI() {
 				return
 			}
 
-			// Show dialog with file path and submit button
 			fileLabel := widget.NewLabel(fmt.Sprintf("Selected file: %s", filePath))
-			submitBtn := widget.NewButton("Submit", func() {
+			var confirmDialog dialog.Dialog // Reference to the confirm dialog
+
+			submitBtn := widget.NewButton("Submit", nil) // Create button with nil handler for now
+
+			content := container.NewVBox(
+				fileLabel,
+				submitBtn,
+			)
+			confirmDialog = dialog.NewCustom("Confirm File", "Cancel", content, w)
+			confirmDialog.Show()
+
+			submitBtn.OnTapped = func() {
+				confirmDialog.Hide() // Hide the confirm dialog when submitting
+
 				// Show progress bar dialog
 				progress := widget.NewProgressBarInfinite()
 				progressLabel := widget.NewLabel("Processing shipments...")
@@ -150,13 +162,7 @@ func RunGUI() {
 						}
 					})
 				}()
-			})
-
-			content := container.NewVBox(
-				fileLabel,
-				submitBtn,
-			)
-			dialog.ShowCustom("Confirm File", "Cancel", content, w)
+			}
 		})
 	})
 
