@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -36,7 +37,7 @@ type ShipmentPayload struct {
 func NewFaireClient() *FaireClient {
 	godotenv.Load()
 	return &FaireClient{
-		BaseURL: "https://www.faire.com/external-api/v2",
+		BaseURL: os.Getenv("FAIRE_BASE_URL"),
 	}
 }
 
