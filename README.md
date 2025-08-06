@@ -1,11 +1,8 @@
-# bsc-faire
+# Faire API Integration & Order Management Tool
 
 ## Graphical User Interface (GUI)
 
-
 This project includes both a command-line interface (CLI) and a graphical user interface (GUI) built with the [Fyne](https://fyne.io/) framework, making it accessible for both technical and non-technical users.
-
-
 
 ### Features
 
@@ -18,6 +15,7 @@ This project includes both a command-line interface (CLI) and a graphical user i
 - **Native File Dialog & Notifications (GUI):** CSV selection uses the system's native file dialog, and results are shown in scrollable dialogs and system notifications.
 - **.env Support (GUI):** The GUI loads API tokens and mock settings from a `.env` file if present.
 - **Multi-Platform Builds:** Build and run on Windows, Linux, and macOS (ARM/x86_64) using provided Makefile targets. Binaries are named with platform/arch suffixes (e.g., `faire-cli-linux-x86_64`).
+
 ### Developer Notes (Fyne v2.6+)
 
 #### Thread-Safe UI Updates
@@ -36,21 +34,19 @@ go func() {
 }()
 ```
 
-
 ### Prerequisites
 
 - Go 1.18 or newer (Go 1.23+ recommended)
 - [Fyne dependencies](https://developer.fyne.io/started/#prerequisites) (for your OS)
 - Set the required environment variables for API tokens:
-	- `BSC_API_TOKEN`, `SMD_API_TOKEN`, `C21_API_TOKEN`, `ASC_API_TOKEN`, `BJP_API_TOKEN`, `GTG_API_TOKEN`, `OAT_API_TOKEN` (set as needed for your sale sources)
+  - `BSC_API_TOKEN`, `SMD_API_TOKEN`, `C21_API_TOKEN`, `ASC_API_TOKEN`, `BJP_API_TOKEN`, `GTG_API_TOKEN`, `OAT_API_TOKEN` (set as needed for your sale sources)
 - (Optional, GUI) Create a `.env` file in the project root to set API tokens and mock settings for the GUI.
-	- Example:
-	  ```
-	  BSC_API_TOKEN=your_token_here
-	  FAIRE_USE_MOCK=1
-	  FAIRE_MOCK_FAILS=2,4
-	  ```
-
+  - Example:
+    ```
+    BSC_API_TOKEN=your_token_here
+    FAIRE_USE_MOCK=1
+    FAIRE_MOCK_FAILS=2,4
+    ```
 
 ### Building the CLI
 
@@ -68,7 +64,6 @@ This will produce the `faire-cli-native` binary in the `bin/` directory (or `fai
 ./bin/faire-cli-native
 ```
 
-
 ### CLI Usage
 
 The CLI provides the following commands:
@@ -78,13 +73,16 @@ The CLI provides the following commands:
 ```
 ./bin/faire-cli-native process [csvfile] [--mock] [--fails indices]
 ```
-*Process shipments from a CSV file and add them to Faire orders.*
+
+_Process shipments from a CSV file and add them to Faire orders._
 
 **Flags:**
+
 - `--mock`: Use a mock Faire client (no real API calls, for testing)
 - `--fails`: Comma-separated list of shipment indices to simulate as failures (mock only)
 
 **Example:**
+
 ```
 ./bin/faire-cli-native process csv/Shipments.csv --mock --fails 2,4
 ```
@@ -94,14 +92,17 @@ The CLI provides the following commands:
 ```
 ./bin/faire-cli-native orders [sale_source] [--limit N] [--page N] [--states STATE1,STATE2]
 ```
-*Get all orders by sale source. `sale_source` can be `21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`.*
+
+_Get all orders by sale source. `sale_source` can be `21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`._
 
 **Flags:**
+
 - `--limit`: Max number of orders to return (10-50, default 50)
 - `--page`: Page number to return (default 1)
 - `--states`: Comma-separated list of states to include (if set, only these states are shown)
 
 **Example:**
+
 ```
 ./bin/faire-cli-native orders bsc --limit 25 --page 2 --states NEW,PROCESSING
 ```
@@ -111,15 +112,16 @@ The CLI provides the following commands:
 ```
 ./bin/faire-cli-native order [sale_source] [orderID]
 ```
-*Get a single order by sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) and order ID.*
+
+_Get a single order by sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) and order ID._
 
 **Example:**
+
 ```
 ./bin/faire-cli-native order bsc 123456
 ```
 
 **Note:** Ensure the required environment variables (`BSC_API_TOKEN`, `SMD_API_TOKEN`, `C21_API_TOKEN`, `ASC_API_TOKEN`, `BJP_API_TOKEN`, `GTG_API_TOKEN`, `OAT_API_TOKEN`) are set before running commands. For other sale sources, set the corresponding API token environment variable.
-
 
 ### Building the GUI
 
@@ -128,7 +130,6 @@ make gui
 ```
 
 This will produce the `faire-gui-native` binary in the `bin/` directory (or `faire-gui-<platform>` for cross-builds).
-
 
 ### Running the GUI
 
