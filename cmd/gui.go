@@ -204,34 +204,32 @@ func RunGUI() {
 					dialog.ShowError(fmt.Errorf("invalid sale source: must be '21', 'asc', 'bjp', 'bsc', 'gtg', 'oat', or 'sm'"), w)
 					return
 				}
-				// Fetch orders asynchronously to avoid blocking the UI
-				respCh := make(chan struct {
-					resp []byte
-					err  error
-				})
+				// Show progress bar dialog
+				progress := widget.NewProgressBarInfinite()
+				progressLabel := widget.NewLabel("Fetching orders...")
+				progressDialog := dialog.NewCustom("Fetching Orders", "Cancel", container.NewVBox(progressLabel, progress), w)
+				progressDialog.Show()
+
 				go func() {
 					client := apppkg.NewFaireClient()
 					resp, err := client.GetAllOrders(token, 50, 1, "DELIVERED,BACKORDERED,CANCELED,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING")
-					respCh <- struct {
-						resp []byte
-						err  error
-					}{resp, err}
+					fyne.Do(func() {
+						progressDialog.Hide()
+						if err != nil {
+							dialog.ShowError(fmt.Errorf("failed to get orders: %v", err), w)
+							return
+						}
+						var ordersResp apppkg.Orders
+						if err := json.Unmarshal(resp, &ordersResp); err != nil {
+							dialog.ShowError(fmt.Errorf("failed to parse orders: %v", err), w)
+							return
+						}
+						msg := apppkg.FormatOrders(ordersResp.Orders)
+						scroll := container.NewVScroll(widget.NewLabel(msg))
+						scroll.SetMinSize(fyne.NewSize(500, 400))
+						dialog.ShowCustom("Orders", "OK", scroll, w)
+					})
 				}()
-				result := <-respCh
-				// Show dialog with orders or error
-				if result.err != nil {
-					dialog.ShowError(fmt.Errorf("failed to get orders: %v", result.err), w)
-					return
-				}
-				var ordersResp apppkg.Orders
-				if err := json.Unmarshal(result.resp, &ordersResp); err != nil {
-					dialog.ShowError(fmt.Errorf("failed to parse orders: %v", err), w)
-					return
-				}
-				msg := apppkg.FormatOrders(ordersResp.Orders)
-				scroll := container.NewVScroll(widget.NewLabel(msg))
-				scroll.SetMinSize(fyne.NewSize(500, 400))
-				dialog.ShowCustom("Orders", "OK", scroll, w)
 			}, w)
 	})
 
@@ -310,34 +308,32 @@ func RunGUI() {
 					dialog.ShowError(fmt.Errorf("invalid sale source: must be '21', 'asc', 'bjp', 'bsc', 'gtg', 'oat', or 'sm'"), w)
 					return
 				}
-				// Fetch order asynchronously to avoid blocking the UI
-				respCh := make(chan struct {
-					resp []byte
-					err  error
-				})
+				// Show progress bar dialog
+				progress := widget.NewProgressBarInfinite()
+				progressLabel := widget.NewLabel("Fetching order...")
+				progressDialog := dialog.NewCustom("Fetching Order", "Cancel", container.NewVBox(progressLabel, progress), w)
+				progressDialog.Show()
+
 				go func() {
 					client := apppkg.NewFaireClient()
 					resp, err := client.GetOrderByID(orderID, token)
-					respCh <- struct {
-						resp []byte
-						err  error
-					}{resp, err}
+					fyne.Do(func() {
+						progressDialog.Hide()
+						if err != nil {
+							dialog.ShowError(fmt.Errorf("failed to get order: %v", err), w)
+							return
+						}
+						var order apppkg.Order
+						if err := json.Unmarshal(resp, &order); err != nil {
+							dialog.ShowError(fmt.Errorf("failed to parse order: %v", err), w)
+							return
+						}
+						msg := apppkg.FormatOrder(order)
+						scroll := container.NewVScroll(widget.NewLabel(msg))
+						scroll.SetMinSize(fyne.NewSize(500, 400))
+						dialog.ShowCustom("Order", "OK", scroll, w)
+					})
 				}()
-				result := <-respCh
-				// Show dialog with order details or error
-				if result.err != nil {
-					dialog.ShowError(fmt.Errorf("failed to get order: %v", result.err), w)
-					return
-				}
-				var order apppkg.Order
-				if err := json.Unmarshal(result.resp, &order); err != nil {
-					dialog.ShowError(fmt.Errorf("failed to parse order: %v", err), w)
-					return
-				}
-				msg := apppkg.FormatOrder(order)
-				scroll := container.NewVScroll(widget.NewLabel(msg))
-				scroll.SetMinSize(fyne.NewSize(500, 400))
-				dialog.ShowCustom("Order", "OK", scroll, w)
 			}, w)
 	})
 
