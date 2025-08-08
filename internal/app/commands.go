@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -205,106 +204,11 @@ var exportCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := NewFaireClient()
-		var token string
-		saleSource := args[0]
-		switch saleSource {
-		case "21":
-			token = os.Getenv("C21_API_TOKEN")
-		case "asc":
-			token = os.Getenv("ASC_API_TOKEN")
-		case "bjp":
-			token = os.Getenv("BJP_API_TOKEN")
-		case "bsc":
-			token = os.Getenv("BSC_API_TOKEN")
-		case "gtg":
-			token = os.Getenv("GTG_API_TOKEN")
-		case "oat":
-			token = os.Getenv("OAT_API_TOKEN")
-		case "sm":
-			token = os.Getenv("SMD_API_TOKEN")
-		default:
-			return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
-		}
-
-		// Only export NEW orders
-		limit := 50
-		page := 1
-		states := "DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING"
-		resp, err := client.GetAllOrders(token, limit, page, states)
+		count, err := client.ExportNewOrdersToCSV(args[0], "faire_new_orders.csv")
 		if err != nil {
 			return err
 		}
-		var ordersResp Orders
-		if err := json.Unmarshal(resp, &ordersResp); err != nil {
-			return fmt.Errorf("failed to parse orders: %w", err)
-		}
-
-		// Filter for only NEW orders (should be all, but double check)
-		var newOrders []Order
-		for _, order := range ordersResp.Orders {
-			if strings.ToUpper(order.State) == "NEW" {
-				newOrders = append(newOrders, order)
-			}
-		}
-
-		// Prepare CSV
-		file, err := os.Create("faire_new_orders.csv")
-		if err != nil {
-			return fmt.Errorf("failed to create CSV file: %w", err)
-		}
-		defer file.Close()
-		writer := csv.NewWriter(file)
-		defer writer.Flush()
-
-		// Write header
-		header := []string{
-			"id", "display_id", "created_at", "ship_after",
-			"address_name", "address_address1", "address_address2", "address_postal_code",
-			"address_city", "address_state", "address_state_code", "address_phone_number",
-			"address_country", "address_country_code", "address_company_name",
-			"is_free_shipping", "brand_discounts_includes_free_shipping", "brand_discounts_discount_percentage",
-			"payout_costs_commission_bps",
-		}
-		if err := writer.Write(header); err != nil {
-			return fmt.Errorf("failed to write CSV header: %w", err)
-		}
-
-		// Write rows
-		for _, order := range newOrders {
-			// Brand discounts fields
-			var includesFreeShipping []string
-			var discountPercentages []string
-			for _, bd := range order.BrandDiscounts {
-				includesFreeShipping = append(includesFreeShipping, strconv.FormatBool(bd.IncludesFreeShipping))
-				discountPercentages = append(discountPercentages, fmt.Sprintf("%.2f", bd.DiscountPercentage))
-			}
-			row := []string{
-				order.ID,
-				order.DisplayID,
-				order.CreatedAt.Format("20060102"),
-				order.ShipAfter.Format("20060102"),
-				order.Address.Name,
-				order.Address.Address1,
-				order.Address.Address2,
-				order.Address.PostalCode,
-				order.Address.City,
-				order.Address.State,
-				order.Address.StateCode,
-				order.Address.PhoneNumber,
-				order.Address.Country,
-				order.Address.CountryCode,
-				order.Address.CompanyName,
-				strconv.FormatBool(order.IsFreeShipping),
-				strings.Join(includesFreeShipping, ","),
-				strings.Join(discountPercentages, ","),
-				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
-			}
-			if err := writer.Write(row); err != nil {
-				return fmt.Errorf("failed to write CSV row: %w", err)
-			}
-		}
-
-		fmt.Printf("Exported %d new orders to faire_new_orders.csv\n", len(newOrders))
+		fmt.Printf("Exported %d new orders to faire_new_orders.csv\n", count)
 		return nil
 	},
 }

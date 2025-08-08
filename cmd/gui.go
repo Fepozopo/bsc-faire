@@ -235,6 +235,39 @@ func RunGUI() {
 			}, w)
 	})
 
+	// Button: Export NEW Orders to CSV
+	// - Prompts the user for a sale source.
+	// - Exports NEW orders to faire_new_orders.csv using the shared logic.
+	exportBtn := widget.NewButton("Export NEW Orders to CSV", func() {
+		entry := widget.NewEntry()
+		entry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
+		dialog.ShowForm("Export NEW Orders", "Export", "Cancel",
+			[]*widget.FormItem{
+				widget.NewFormItem("Sale Source", entry),
+			}, func(ok bool) {
+				if !ok {
+					return
+				}
+				saleSource := entry.Text
+				progress := widget.NewProgressBarInfinite()
+				progressLabel := widget.NewLabel("Exporting new orders to CSV...")
+				progressDialog := dialog.NewCustom("Exporting", "Cancel", container.NewVBox(progressLabel, progress), w)
+				progressDialog.Show()
+				go func() {
+					client := apppkg.NewFaireClient()
+					count, err := client.ExportNewOrdersToCSV(saleSource, "faire_new_orders.csv")
+					fyne.Do(func() {
+						progressDialog.Hide()
+						if err != nil {
+							dialog.ShowError(fmt.Errorf("Export failed: %v", err), w)
+						} else {
+							dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d new orders to faire_new_orders.csv", count), w)
+						}
+					})
+				}()
+			}, w)
+	})
+
 	// Button: Get Order By ID
 	// - Prompts the user for a sale source ("sm" or "bsc") and an order ID.
 	// - Fetches the order details asynchronously.
@@ -319,6 +352,7 @@ func RunGUI() {
 		widget.NewLabel(""), // Adds a small space
 		ordersBtn,
 		orderBtn,
+		exportBtn,
 		widget.NewLabel(""), // Adds a small space
 		layout.NewSpacer(),  // Pushes everything below
 		quitBtn,
