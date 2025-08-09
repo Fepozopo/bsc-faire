@@ -361,9 +361,10 @@ func RunGUI() {
 		widget.NewLabel("Faire GUI"),
 		processBtn,
 		widget.NewLabel(""), // Adds a small space
+		exportBtn,
+		widget.NewLabel(""), // Adds a small space
 		ordersBtn,
 		orderBtn,
-		exportBtn,
 		widget.NewLabel(""), // Adds a small space
 		layout.NewSpacer(),  // Pushes everything below
 		quitBtn,
