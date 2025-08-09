@@ -11,8 +11,6 @@ import (
 )
 
 var (
-	limitFlag  int
-	pageFlag   int
 	statesFlag string
 	mockFlag   bool
 	failsFlag  string
@@ -27,9 +25,7 @@ func init() {
 	processCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
 	processCmd.Flags().StringVar(&failsFlag, "fails", "", "Comma-separated list of shipment indices to fail (mock only)")
 
-	ordersCmd.Flags().IntVar(&limitFlag, "limit", 50, "Max number of orders to return (10-50)")
-	ordersCmd.Flags().IntVar(&pageFlag, "page", 1, "Page number to return (default 1)")
-	ordersCmd.Flags().StringVar(&statesFlag, "states", "", "Comma separated list of states to exclude. If set, will exclude all except the provided state.")
+	ordersCmd.Flags().StringVar(&statesFlag, "states", "", "Comma-separated list of order states to include (e.g. NEW,DELIVERED)")
 }
 
 var processCmd = &cobra.Command{
@@ -92,15 +88,8 @@ var ordersCmd = &cobra.Command{
 			}
 		}
 
-		// Validate limit
-		limit := limitFlag
-		if limit < 10 || limit > 50 {
-			limit = 50
-		}
-		page := pageFlag
-		if page < 1 {
-			page = 1
-		}
+		// Always use internal pagination to fetch all orders; limit and page flags removed
+		limit := 50
 
 		// All possible states
 		allStates := []string{
@@ -127,13 +116,22 @@ var ordersCmd = &cobra.Command{
 			states = strings.Join(filtered, ",")
 		}
 
-		resp, err := client.GetAllOrders(token, limit, page, states)
-		if err != nil {
-			return err
-		}
-		var ordersResp Orders
-		if err := json.Unmarshal(resp, &ordersResp); err != nil {
-			return fmt.Errorf("failed to parse orders: %w", err)
+		var allOrders []Order
+		currPage := 1
+		for {
+			resp, err := client.GetAllOrders(token, limit, currPage, states)
+			if err != nil {
+				return err
+			}
+			var ordersResp Orders
+			if err := json.Unmarshal(resp, &ordersResp); err != nil {
+				return fmt.Errorf("failed to parse orders: %w", err)
+			}
+			allOrders = append(allOrders, ordersResp.Orders...)
+			if len(ordersResp.Orders) < limit {
+				break
+			}
+			currPage++
 		}
 
 		if statesFlag != "" {
@@ -142,14 +140,14 @@ var ordersCmd = &cobra.Command{
 				allowed[strings.ToUpper(strings.TrimSpace(s))] = struct{}{}
 			}
 			var filtered []Order
-			for _, order := range ordersResp.Orders {
+			for _, order := range allOrders {
 				if _, ok := allowed[strings.ToUpper(order.State)]; ok {
 					filtered = append(filtered, order)
 				}
 			}
-			ordersResp.Orders = filtered
+			allOrders = filtered
 		}
-		return ShowOrdersTUI(ordersResp.Orders)
+		return ShowOrdersTUI(allOrders)
 	},
 }
 

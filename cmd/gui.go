@@ -212,19 +212,34 @@ func RunGUI() {
 
 				go func() {
 					client := apppkg.NewFaireClient()
-					resp, err := client.GetAllOrders(token, 50, 1, "DELIVERED,BACKORDERED,CANCELED,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING")
-					fyne.Do(func() {
-						progressDialog.Hide()
+					var allOrders []apppkg.Order
+					currPage := 1
+					for {
+						resp, err := client.GetAllOrders(token, 50, currPage, "DELIVERED,BACKORDERED,CANCELED,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING")
 						if err != nil {
-							dialog.ShowError(fmt.Errorf("failed to get orders: %v", err), w)
+							fyne.Do(func() {
+								progressDialog.Hide()
+								dialog.ShowError(fmt.Errorf("failed to get orders: %v", err), w)
+							})
 							return
 						}
 						var ordersResp apppkg.Orders
 						if err := json.Unmarshal(resp, &ordersResp); err != nil {
-							dialog.ShowError(fmt.Errorf("failed to parse orders: %v", err), w)
+							fyne.Do(func() {
+								progressDialog.Hide()
+								dialog.ShowError(fmt.Errorf("failed to parse orders: %v", err), w)
+							})
 							return
 						}
-						msg := apppkg.FormatOrders(ordersResp.Orders)
+						allOrders = append(allOrders, ordersResp.Orders...)
+						if len(ordersResp.Orders) < 50 {
+							break
+						}
+						currPage++
+					}
+					fyne.Do(func() {
+						progressDialog.Hide()
+						msg := apppkg.FormatOrders(allOrders)
 						scroll := container.NewVScroll(widget.NewLabel(msg))
 						scroll.SetMinSize(fyne.NewSize(500, 400))
 						dialog.ShowCustom("Orders", "OK", scroll, w)
