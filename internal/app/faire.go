@@ -119,25 +119,32 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 		return 0, fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
 	}
 
-	// Only export NEW orders
+	// Paginate through all orders and collect NEW ones
 	limit := 50
 	page := 1
 	states := "DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING"
-	resp, err := c.GetAllOrders(token, limit, page, states)
-	if err != nil {
-		return 0, err
-	}
-	var ordersResp Orders
-	if err := json.Unmarshal(resp, &ordersResp); err != nil {
-		return 0, fmt.Errorf("failed to parse orders: %w", err)
-	}
-
-	// Filter for only NEW orders (should be all, but double check)
 	var newOrders []Order
-	for _, order := range ordersResp.Orders {
-		if strings.ToUpper(order.State) == "NEW" {
-			newOrders = append(newOrders, order)
+
+	for {
+		resp, err := c.GetAllOrders(token, limit, page, states)
+		if err != nil {
+			return 0, err
 		}
+		var ordersResp Orders
+		if err := json.Unmarshal(resp, &ordersResp); err != nil {
+			return 0, fmt.Errorf("failed to parse orders: %w", err)
+		}
+		foundNew := 0
+		for _, order := range ordersResp.Orders {
+			if strings.ToUpper(order.State) == "NEW" {
+				newOrders = append(newOrders, order)
+				foundNew++
+			}
+		}
+		if len(ordersResp.Orders) < limit {
+			break // last page
+		}
+		page++
 	}
 
 	// Prepare CSV
@@ -149,7 +156,7 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// Write header
+	// Write header (add item_sku and item_price_cents)
 	header := []string{
 		"id", "display_id", "created_at", "ship_after",
 		"address_name", "address_address1", "address_address2", "address_postal_code",
@@ -157,12 +164,13 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 		"address_country", "address_country_code", "address_company_name",
 		"is_free_shipping", "brand_discounts_includes_free_shipping", "brand_discounts_discount_percentage",
 		"payout_costs_commission_bps",
+		"item_sku", "item_price_cents",
 	}
 	if err := writer.Write(header); err != nil {
 		return 0, fmt.Errorf("failed to write CSV header: %w", err)
 	}
 
-	// Write rows
+	orderCount := 0
 	for _, order := range newOrders {
 		// Brand discounts fields
 		var includesFreeShipping []string
@@ -171,31 +179,69 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 			includesFreeShipping = append(includesFreeShipping, strconv.FormatBool(bd.IncludesFreeShipping))
 			discountPercentages = append(discountPercentages, fmt.Sprintf("%.2f", bd.DiscountPercentage))
 		}
-		row := []string{
-			order.ID,
-			order.DisplayID,
-			order.CreatedAt.Format("20060102"),
-			order.ShipAfter.Format("20060102"),
-			order.Address.Name,
-			order.Address.Address1,
-			order.Address.Address2,
-			order.Address.PostalCode,
-			order.Address.City,
-			order.Address.State,
-			order.Address.StateCode,
-			order.Address.PhoneNumber,
-			order.Address.Country,
-			order.Address.CountryCode,
-			order.Address.CompanyName,
-			strconv.FormatBool(order.IsFreeShipping),
-			strings.Join(includesFreeShipping, ","),
-			strings.Join(discountPercentages, ","),
-			fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
+
+		// If there are no items, you may want to skip or write a row with empty item fields
+		if len(order.Items) == 0 {
+			row := []string{
+				order.ID,
+				order.DisplayID,
+				order.CreatedAt.Format("20060102"),
+				order.ShipAfter.Format("20060102"),
+				order.Address.Name,
+				order.Address.Address1,
+				order.Address.Address2,
+				order.Address.PostalCode,
+				order.Address.City,
+				order.Address.State,
+				order.Address.StateCode,
+				order.Address.PhoneNumber,
+				order.Address.Country,
+				order.Address.CountryCode,
+				order.Address.CompanyName,
+				strconv.FormatBool(order.IsFreeShipping),
+				strings.Join(includesFreeShipping, ","),
+				strings.Join(discountPercentages, ","),
+				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
+				"", // item_sku
+				"", // item_price_cents
+			}
+			if err := writer.Write(row); err != nil {
+				return 0, fmt.Errorf("failed to write CSV row: %w", err)
+			}
+			orderCount++
+			continue
 		}
-		if err := writer.Write(row); err != nil {
-			return 0, fmt.Errorf("failed to write CSV row: %w", err)
+
+		for _, item := range order.Items {
+			row := []string{
+				order.ID,
+				order.DisplayID,
+				order.CreatedAt.Format("20060102"),
+				order.ShipAfter.Format("20060102"),
+				order.Address.Name,
+				order.Address.Address1,
+				order.Address.Address2,
+				order.Address.PostalCode,
+				order.Address.City,
+				order.Address.State,
+				order.Address.StateCode,
+				order.Address.PhoneNumber,
+				order.Address.Country,
+				order.Address.CountryCode,
+				order.Address.CompanyName,
+				strconv.FormatBool(order.IsFreeShipping),
+				strings.Join(includesFreeShipping, ","),
+				strings.Join(discountPercentages, ","),
+				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
+				item.Sku,
+				strconv.Itoa(item.PriceCents),
+			}
+			if err := writer.Write(row); err != nil {
+				return 0, fmt.Errorf("failed to write CSV row: %w", err)
+			}
 		}
+		orderCount++
 	}
 
-	return len(newOrders), nil
+	return orderCount, nil
 }
