@@ -5,8 +5,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 // DisplayIDToOrderID converts a display ID (e.g., "BXDMJBWXID") to an order ID (e.g., "bo_bxdmjbwxid").
@@ -43,16 +41,6 @@ func ProcessShipments(csvPath string, client FaireClientInterface) (processed []
 	}
 	defer logFile.Close()
 
-	// Load .env to get API tokens
-	godotenv.Load()
-	c21Token := os.Getenv("C21_API_TOKEN")
-	ascToken := os.Getenv("ASC_API_TOKEN")
-	bjpToken := os.Getenv("BJP_API_TOKEN")
-	bscToken := os.Getenv("BSC_API_TOKEN")
-	gtgToken := os.Getenv("GTG_API_TOKEN")
-	oatToken := os.Getenv("OAT_API_TOKEN")
-	smdToken := os.Getenv("SMD_API_TOKEN")
-
 	shipments, parseErr := ParseShipmentsCSV(csvPath)
 	if parseErr != nil {
 		err = parseErr
@@ -61,23 +49,8 @@ func ProcessShipments(csvPath string, client FaireClientInterface) (processed []
 	fmt.Fprintf(logFile, "INFO: Parsed %d shipments from CSV\n", len(shipments))
 	for i, s := range shipments {
 		fmt.Fprintf(logFile, "INFO: Processing shipment %d: %+v\n", i+1, s)
-		var apiToken string
-		switch s.SaleSource {
-		case "21":
-			apiToken = c21Token
-		case "ASC":
-			apiToken = ascToken
-		case "BJP":
-			apiToken = bjpToken
-		case "BSC":
-			apiToken = bscToken
-		case "GTG":
-			apiToken = gtgToken
-		case "OAT":
-			apiToken = oatToken
-		case "SM":
-			apiToken = smdToken
-		default:
+		apiToken, tokenErr := GetToken(s.SaleSource)
+		if tokenErr != nil || apiToken == "" {
 			// Should not happen due to ParseShipmentsCSV, but skip just in case
 			continue
 		}

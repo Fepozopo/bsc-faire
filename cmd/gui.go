@@ -18,11 +18,15 @@ import (
 	osDialog "github.com/sqweek/dialog"
 )
 
+// getMockConfig loads .env if not already loaded and returns mock config.
+func getMockConfig() (mock, mockFails string) {
+	_ = godotenv.Load()
+	return os.Getenv("FAIRE_USE_MOCK"), os.Getenv("FAIRE_MOCK_FAILS")
+}
+
 // openFileWindow creates a file open dialog using the system's native file manager.
-// When a file is selected, it calls the provided callback with the file path.
-// If the user cancels or an error occurs, it shows an error dialog.
 func openFileWindow(parent fyne.Window, callback func(filePath string, e error)) {
-	filePath, err := osDialog.File().Load() // Use the aliased dialog for the native file open
+	filePath, err := osDialog.File().Load()
 	if err != nil {
 		if err.Error() == "cancelled" {
 			dialog.ShowError(fmt.Errorf("file open cancelled: %v", err), parent)
@@ -38,23 +42,7 @@ func RunGUI() {
 	myApp := fyneapp.New()
 	w := myApp.NewWindow("Faire GUI")
 
-	// Load .env to get API tokens
-	godotenv.Load()
-	c21Token := os.Getenv("C21_API_TOKEN")
-	ascToken := os.Getenv("ASC_API_TOKEN")
-	bjpToken := os.Getenv("BJP_API_TOKEN")
-	bscToken := os.Getenv("BSC_API_TOKEN")
-	gtgToken := os.Getenv("GTG_API_TOKEN")
-	oatToken := os.Getenv("OAT_API_TOKEN")
-	smdToken := os.Getenv("SMD_API_TOKEN")
-	mock := os.Getenv("FAIRE_USE_MOCK")
-	mockFails := os.Getenv("FAIRE_MOCK_FAILS")
-
 	// Button: Process Shipments CSV
-	// - Opens a file dialog for the user to select a CSV file containing shipment data.
-	// - Processes the shipments asynchronously.
-	// - Displays a dialog with detailed results, including all fields of processed and failed shipments.
-	// - Sends a notification with the result summary.
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
 		openFileWindow(w, func(filePath string, e error) {
 			if e != nil {
@@ -70,9 +58,9 @@ func RunGUI() {
 			}
 
 			fileLabel := widget.NewLabel(fmt.Sprintf("Selected file: %s", filePath))
-			var confirmDialog dialog.Dialog // Reference to the confirm dialog
+			var confirmDialog dialog.Dialog
 
-			submitBtn := widget.NewButton("Submit", nil) // Create button with nil handler for now
+			submitBtn := widget.NewButton("Submit", nil)
 
 			content := container.NewVBox(
 				fileLabel,
@@ -82,21 +70,20 @@ func RunGUI() {
 			confirmDialog.Show()
 
 			submitBtn.OnTapped = func() {
-				confirmDialog.Hide() // Hide the confirm dialog when submitting
+				confirmDialog.Hide()
 
-				// Show progress bar dialog
 				progress := widget.NewProgressBarInfinite()
 				progressLabel := widget.NewLabel("Processing shipments...")
 				progressDialog := dialog.NewCustom("Processing", "Cancel", container.NewVBox(progressLabel, progress), w)
 				progressDialog.Show()
 
 				go func() {
+					mock, mockFails := getMockConfig()
 					var client apppkg.FaireClientInterface
 					if mock == "1" {
 						failMap := map[int]bool{}
-						failEnv := mockFails // e.g., "2,4"
-						if failEnv != "" {
-							for _, s := range strings.Split(failEnv, ",") {
+						if mockFails != "" {
+							for _, s := range strings.Split(mockFails, ",") {
 								if idx, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
 									failMap[idx] = true
 								}
@@ -167,11 +154,7 @@ func RunGUI() {
 	})
 
 	// Button: Get All Orders
-	// - Prompts the user for a sale source ("21", "asc", "bjp", "bsc", "gtg", "oat", or "sm").
-	// - Fetches all orders for the selected source asynchronously.
-	// - Displays the formatted response in a scrollable dialog.
 	ordersBtn := widget.NewButton("Get All Orders", func() {
-		// Prompt for sale source ("21", "asc", "bjp", "bsc", "gtg", "oat", or "sm")
 		entry := widget.NewEntry()
 		entry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
 		dialog.ShowForm("Get All Orders", "Get", "Cancel",
@@ -179,32 +162,14 @@ func RunGUI() {
 				widget.NewFormItem("Sale Source", entry),
 			}, func(ok bool) {
 				if !ok {
-					// User cancelled the form
 					return
 				}
 				saleSource := entry.Text
-				var token string
-				switch saleSource {
-				case "21":
-					token = c21Token
-				case "asc":
-					token = ascToken
-				case "bjp":
-					token = bjpToken
-				case "bsc":
-					token = bscToken
-				case "gtg":
-					token = gtgToken
-				case "oat":
-					token = oatToken
-				case "sm":
-					token = smdToken
-				default:
-					// Invalid input, show error
-					dialog.ShowError(fmt.Errorf("invalid sale source: must be '21', 'asc', 'bjp', 'bsc', 'gtg', 'oat', or 'sm'"), w)
+				token, err := apppkg.GetToken(saleSource)
+				if err != nil || token == "" {
+					dialog.ShowError(fmt.Errorf("invalid or missing token for sale source '%s'", saleSource), w)
 					return
 				}
-				// Show progress bar dialog
 				progress := widget.NewProgressBarInfinite()
 				progressLabel := widget.NewLabel("Fetching orders...")
 				progressDialog := dialog.NewCustom("Fetching Orders", "Cancel", container.NewVBox(progressLabel, progress), w)
@@ -249,8 +214,6 @@ func RunGUI() {
 	})
 
 	// Button: Export NEW Orders to CSV
-	// - Prompts the user for a sale source.
-	// - Exports NEW orders to faire_new_orders.csv using the shared logic.
 	exportBtn := widget.NewButton("Export NEW Orders to CSV", func() {
 		entry := widget.NewEntry()
 		entry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
@@ -282,11 +245,7 @@ func RunGUI() {
 	})
 
 	// Button: Get Order By ID
-	// - Prompts the user for a sale source ("sm" or "bsc") and an order ID.
-	// - Fetches the order details asynchronously.
-	// - Displays the formatted order response in a scrollable dialog.
 	orderBtn := widget.NewButton("Get Order By ID", func() {
-		// Prompt for sale source and order ID
 		saleSourceEntry := widget.NewEntry()
 		saleSourceEntry.SetPlaceHolder("Sale Source (21, asc, bjp, bsc, gtg, oat, sm)")
 		orderIDEntry := widget.NewEntry()
@@ -297,33 +256,15 @@ func RunGUI() {
 				widget.NewFormItem("Order ID", orderIDEntry),
 			}, func(ok bool) {
 				if !ok {
-					// User cancelled the form
 					return
 				}
 				saleSource := saleSourceEntry.Text
 				orderID := orderIDEntry.Text
-				var token string
-				switch saleSource {
-				case "21":
-					token = c21Token
-				case "asc":
-					token = ascToken
-				case "bjp":
-					token = bjpToken
-				case "bsc":
-					token = bscToken
-				case "gtg":
-					token = gtgToken
-				case "oat":
-					token = oatToken
-				case "sm":
-					token = smdToken
-				default:
-					// Invalid input, show error
-					dialog.ShowError(fmt.Errorf("invalid sale source: must be '21', 'asc', 'bjp', 'bsc', 'gtg', 'oat', or 'sm'"), w)
+				token, err := apppkg.GetToken(saleSource)
+				if err != nil || token == "" {
+					dialog.ShowError(fmt.Errorf("invalid or missing token for sale source '%s'", saleSource), w)
 					return
 				}
-				// Show progress bar dialog
 				progress := widget.NewProgressBarInfinite()
 				progressLabel := widget.NewLabel("Fetching order...")
 				progressDialog := dialog.NewCustom("Fetching Order", "Cancel", container.NewVBox(progressLabel, progress), w)
@@ -352,24 +293,20 @@ func RunGUI() {
 			}, w)
 	})
 
-	// Button: Quit
-	// - Exits the application immediately when clicked.
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
-	// Set up the main window layout with all buttons and the application label.
 	w.SetContent(container.NewVBox(
 		widget.NewLabel("Faire GUI"),
 		processBtn,
-		widget.NewLabel(""), // Adds a small space
+		widget.NewLabel(""),
 		exportBtn,
-		widget.NewLabel(""), // Adds a small space
+		widget.NewLabel(""),
 		ordersBtn,
 		orderBtn,
-		widget.NewLabel(""), // Adds a small space
-		layout.NewSpacer(),  // Pushes everything below
+		widget.NewLabel(""),
+		layout.NewSpacer(),
 		quitBtn,
 	))
-	// Set initial window size and start the GUI event loop.
 	w.Resize(fyne.NewSize(800, 600))
 	w.ShowAndRun()
 }

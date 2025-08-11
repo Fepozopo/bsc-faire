@@ -99,24 +99,9 @@ func (c *FaireClient) GetOrderByID(PONumber string, apiToken string) ([]byte, er
 // ExportNewOrdersToCSV exports new orders for the given sale source to a CSV file.
 // Returns the number of exported orders and any error.
 func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, error) {
-	var token string
-	switch saleSource {
-	case "21":
-		token = os.Getenv("C21_API_TOKEN")
-	case "asc":
-		token = os.Getenv("ASC_API_TOKEN")
-	case "bjp":
-		token = os.Getenv("BJP_API_TOKEN")
-	case "bsc":
-		token = os.Getenv("BSC_API_TOKEN")
-	case "gtg":
-		token = os.Getenv("GTG_API_TOKEN")
-	case "oat":
-		token = os.Getenv("OAT_API_TOKEN")
-	case "sm":
-		token = os.Getenv("SMD_API_TOKEN")
-	default:
-		return 0, fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
+	token, err := GetToken(saleSource)
+	if err != nil || token == "" {
+		return 0, fmt.Errorf("invalid or missing token for sale source '%s'", saleSource)
 	}
 
 	// Paginate through all orders and collect NEW ones

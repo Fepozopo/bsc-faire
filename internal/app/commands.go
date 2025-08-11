@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -68,23 +67,11 @@ var ordersCmd = &cobra.Command{
 			return fmt.Errorf("too many arguments, expected 1 (got %d)", len(args))
 		} else {
 			saleSource := args[0]
-			switch saleSource {
-			case "21":
-				token = os.Getenv("C21_API_TOKEN")
-			case "asc":
-				token = os.Getenv("ASC_API_TOKEN")
-			case "bjp":
-				token = os.Getenv("BJP_API_TOKEN")
-			case "bsc":
-				token = os.Getenv("BSC_API_TOKEN")
-			case "gtg":
-				token = os.Getenv("GTG_API_TOKEN")
-			case "oat":
-				token = os.Getenv("OAT_API_TOKEN")
-			case "sm":
-				token = os.Getenv("SMD_API_TOKEN")
-			default:
-				return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
+			var err error
+			token, err = GetToken(saleSource)
+			if err != nil || token == "" {
+				fmt.Println("Invalid sale source. Must be one of: 21, asc, bjp, bsc, gtg, oat, sm")
+				return nil
 			}
 		}
 
@@ -162,23 +149,11 @@ var orderCmd = &cobra.Command{
 		}
 		saleSource := args[0]
 		var token string
-		switch saleSource {
-		case "21":
-			token = os.Getenv("C21_API_TOKEN")
-		case "asc":
-			token = os.Getenv("ASC_API_TOKEN")
-		case "bjp":
-			token = os.Getenv("BJP_API_TOKEN")
-		case "bsc":
-			token = os.Getenv("BSC_API_TOKEN")
-		case "gtg":
-			token = os.Getenv("GTG_API_TOKEN")
-		case "oat":
-			token = os.Getenv("OAT_API_TOKEN")
-		case "sm":
-			token = os.Getenv("SMD_API_TOKEN")
-		default:
-			return fmt.Errorf("invalid sale source: %s (must be 21, asc, bjp, bsc, gtg, oat, or sm)", saleSource)
+		var err error
+		token, err = GetToken(saleSource)
+		if err != nil || token == "" {
+			fmt.Println("Invalid sale source. Must be one of: 21, asc, bjp, bsc, gtg, oat, sm")
+			return nil
 		}
 		orderID := args[1]
 		resp, err := client.GetOrderByID(orderID, token)
