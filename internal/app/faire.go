@@ -149,7 +149,7 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 		"address_country", "address_country_code", "address_company_name",
 		"is_free_shipping", "brand_discounts_includes_free_shipping", "brand_discounts_discount_percentage",
 		"payout_costs_commission_bps",
-		"item_sku", "item_price_cents",
+		"item_sku", "item_price_cents", "item_quantity",
 	}
 	if err := writer.Write(header); err != nil {
 		return 0, fmt.Errorf("failed to write CSV header: %w", err)
@@ -189,6 +189,7 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
 				"", // item_sku
 				"", // item_price_cents
+				"", // item_quantity
 			}
 			if err := writer.Write(row); err != nil {
 				return 0, fmt.Errorf("failed to write CSV row: %w", err)
@@ -219,7 +220,8 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 				strings.Join(discountPercentages, ","),
 				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
 				item.Sku,
-				strconv.Itoa(item.PriceCents),
+				fmt.Sprintf("%.2f", float64(item.PriceCents)/100.0),
+				strconv.Itoa(item.Quantity),
 			}
 			if err := writer.Write(row); err != nil {
 				return 0, fmt.Errorf("failed to write CSV row: %w", err)

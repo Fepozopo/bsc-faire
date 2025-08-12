@@ -7,6 +7,14 @@ import (
 )
 
 func TestProcessShipments_MockClient(t *testing.T) {
+	// Set required API tokens for test
+	os.Setenv("BSC_API_TOKEN", "dummy-token")
+	os.Setenv("SMD_API_TOKEN", "dummy-token")
+	os.Setenv("C21_API_TOKEN", "dummy-token")
+	os.Setenv("ASC_API_TOKEN", "dummy-token")
+	os.Setenv("BJP_API_TOKEN", "dummy-token")
+	os.Setenv("GTG_API_TOKEN", "dummy-token")
+	os.Setenv("OAT_API_TOKEN", "dummy-token")
 	// Prepare a temporary CSV file
 	csvContent := `Source Document Key,PO Numbers,Master Tracking #,Ready Date/Time,Shipment Charges Applied Total,Ship Carrier Name,Billing Type,Recipient Customer ID,Sale Source (UDF)
 0083419,88NJSQS3DD,1Z972Y3Y0301141377,7/16/2025,0,UPS,Consignee,0090671,SM
