@@ -148,7 +148,7 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 		"address_city", "address_state", "address_state_code", "address_phone_number",
 		"address_country", "address_country_code", "address_company_name",
 		"is_free_shipping", "brand_discounts_includes_free_shipping", "brand_discounts_discount_percentage",
-		"payout_costs_commission_bps",
+		"payout_costs_commission_bps", "payout_costs_commission_cents",
 		"item_sku", "item_price_cents", "item_quantity",
 	}
 	if err := writer.Write(header); err != nil {
@@ -163,39 +163,6 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 		for _, bd := range order.BrandDiscounts {
 			includesFreeShipping = append(includesFreeShipping, strconv.FormatBool(bd.IncludesFreeShipping))
 			discountPercentages = append(discountPercentages, fmt.Sprintf("%.2f", bd.DiscountPercentage))
-		}
-
-		// If there are no items, you may want to skip or write a row with empty item fields
-		if len(order.Items) == 0 {
-			row := []string{
-				order.ID,
-				order.DisplayID,
-				order.CreatedAt.Format("20060102"),
-				order.ShipAfter.Format("20060102"),
-				order.Address.Name,
-				order.Address.Address1,
-				order.Address.Address2,
-				order.Address.PostalCode,
-				order.Address.City,
-				order.Address.State,
-				order.Address.StateCode,
-				order.Address.PhoneNumber,
-				order.Address.Country,
-				order.Address.CountryCode,
-				order.Address.CompanyName,
-				strconv.FormatBool(order.IsFreeShipping),
-				strings.Join(includesFreeShipping, ","),
-				strings.Join(discountPercentages, ","),
-				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
-				"", // item_sku
-				"", // item_price_cents
-				"", // item_quantity
-			}
-			if err := writer.Write(row); err != nil {
-				return 0, fmt.Errorf("failed to write CSV row: %w", err)
-			}
-			orderCount++
-			continue
 		}
 
 		for _, item := range order.Items {
@@ -219,6 +186,7 @@ func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, er
 				strings.Join(includesFreeShipping, ","),
 				strings.Join(discountPercentages, ","),
 				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
+				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionCents)/100.0),
 				item.Sku,
 				fmt.Sprintf("%.2f", float64(item.PriceCents)/100.0),
 				strconv.Itoa(item.Quantity),
