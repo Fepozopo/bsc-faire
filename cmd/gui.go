@@ -49,8 +49,10 @@ func checkForUpdates(w fyne.Window) {
 			dialog.ShowError(fmt.Errorf("Update check failed: %w", err), w)
 			return
 		}
+
 		currentVer, _ := semver.Parse(version.Version)
 		if !found || latest.Version.Equals(currentVer) {
+			dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
 			return
 		}
 		confirm := dialog.NewConfirm(
