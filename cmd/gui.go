@@ -14,7 +14,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	apppkg "github.com/Fepozopo/bsc-faire/internal/app"
+	"github.com/Fepozopo/bsc-faire/internal/version"
+	"github.com/blang/semver"
 	"github.com/joho/godotenv"
+	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	osDialog "github.com/sqweek/dialog"
 )
 
@@ -38,9 +41,53 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 	callback(filePath, nil)
 }
 
+func checkForUpdates(w fyne.Window) {
+	go func() {
+		const repo = "Fepozopo/bsc-faire"
+		latest, found, err := selfupdate.DetectLatest(repo)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Update check failed: %w", err), w)
+			return
+		}
+		currentVer, _ := semver.Parse(version.Version)
+		if !found || latest.Version.Equals(currentVer) {
+			return
+		}
+		confirm := dialog.NewConfirm(
+			"Update Available",
+			fmt.Sprintf("Update to version %s?", latest.Version),
+			func(ok bool) {
+				if ok {
+					exe, err := os.Executable()
+					if err != nil {
+						dialog.ShowError(fmt.Errorf("Could not locate executable: %w", err), w)
+						return
+					}
+					err = selfupdate.UpdateTo(latest.AssetURL, exe)
+					if err != nil {
+						dialog.ShowError(fmt.Errorf("Update failed: %w", err), w)
+						return
+					}
+					dialog.ShowInformation("Update Complete", "App updated! Please restart.", w)
+				}
+			},
+			w,
+		)
+		confirm.Show()
+	}()
+}
+
 func RunGUI() {
 	myApp := fyneapp.New()
-	w := myApp.NewWindow("Faire GUI")
+	w := myApp.NewWindow(fmt.Sprintf("Faire GUI (version %s)", version.Version))
+
+	// Button: Self-Update
+	updateBtn := widget.NewButton("Check for Updates", func() {
+		checkForUpdates(w)
+	})
+
+	// Check for updates on startup
+	checkForUpdates(w)
 
 	// Button: Process Shipments CSV
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
@@ -296,7 +343,7 @@ func RunGUI() {
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	w.SetContent(container.NewVBox(
-		widget.NewLabel("Faire GUI"),
+		widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
 		processBtn,
 		widget.NewLabel(""),
 		exportBtn,
@@ -305,6 +352,7 @@ func RunGUI() {
 		orderBtn,
 		widget.NewLabel(""),
 		layout.NewSpacer(),
+		updateBtn,
 		quitBtn,
 	))
 	w.Resize(fyne.NewSize(800, 600))
