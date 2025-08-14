@@ -65,12 +65,24 @@ func checkForUpdates(w fyne.Window) {
 						dialog.ShowError(fmt.Errorf("could not locate executable: %w", err), w)
 						return
 					}
-					err = selfupdate.UpdateTo(latest.AssetURL, exe)
-					if err != nil {
-						dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
-						return
-					}
-					dialog.ShowInformation("Update Complete", "App updated! Please restart.", w)
+
+					// Show infinite progress bar dialog
+					progress := widget.NewProgressBarInfinite()
+					progressLabel := widget.NewLabel("Updating application...")
+					progressDialog := dialog.NewCustom("Updating", "Cancel", container.NewVBox(progressLabel, progress), w)
+					progressDialog.Show()
+
+					go func() {
+						err = selfupdate.UpdateTo(latest.AssetURL, exe)
+						fyne.Do(func() {
+							progressDialog.Hide()
+							if err != nil {
+								dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
+								return
+							}
+							dialog.ShowInformation("Update Complete", "App updated! Please restart.", w)
+						})
+					}()
 				}
 			},
 			w,
