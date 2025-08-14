@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -80,7 +81,15 @@ func checkForUpdates(w fyne.Window) {
 								dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
 								return
 							}
-							dialog.ShowInformation("Update Complete", "App updated! Please restart.", w)
+							// Force restart
+							cmd := exec.Command(exe, os.Args[1:]...)
+							cmd.Env = os.Environ()
+							err := cmd.Start()
+							if err != nil {
+								dialog.ShowError(fmt.Errorf("failed to restart: %w", err), w)
+								return
+							}
+							os.Exit(0)
 						})
 					}()
 				}
