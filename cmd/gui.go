@@ -372,7 +372,6 @@ func RunGUI() {
 	w.SetContent(container.NewVBox(
 		widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
 		processBtn,
-		widget.NewLabel(""),
 		exportBtn,
 		widget.NewLabel(""),
 		ordersBtn,
