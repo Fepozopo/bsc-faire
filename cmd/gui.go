@@ -46,7 +46,7 @@ func checkForUpdates(w fyne.Window) {
 		const repo = "Fepozopo/bsc-faire"
 		latest, found, err := selfupdate.DetectLatest(repo)
 		if err != nil {
-			dialog.ShowError(fmt.Errorf("Update check failed: %w", err), w)
+			dialog.ShowError(fmt.Errorf("update check failed: %w", err), w)
 			return
 		}
 
@@ -62,12 +62,12 @@ func checkForUpdates(w fyne.Window) {
 				if ok {
 					exe, err := os.Executable()
 					if err != nil {
-						dialog.ShowError(fmt.Errorf("Could not locate executable: %w", err), w)
+						dialog.ShowError(fmt.Errorf("could not locate executable: %w", err), w)
 						return
 					}
 					err = selfupdate.UpdateTo(latest.AssetURL, exe)
 					if err != nil {
-						dialog.ShowError(fmt.Errorf("Update failed: %w", err), w)
+						dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
 						return
 					}
 					dialog.ShowInformation("Update Complete", "App updated! Please restart.", w)
@@ -284,7 +284,7 @@ func RunGUI() {
 					fyne.Do(func() {
 						progressDialog.Hide()
 						if err != nil {
-							dialog.ShowError(fmt.Errorf("Export failed: %v", err), w)
+							dialog.ShowError(fmt.Errorf("export failed: %v", err), w)
 						} else {
 							dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d new orders to faire_new_orders.csv", count), w)
 						}
