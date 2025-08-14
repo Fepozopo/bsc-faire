@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -14,7 +15,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	apppkg "github.com/Fepozopo/bsc-faire/internal/app"
+	"github.com/Fepozopo/bsc-faire/internal/version"
+	"github.com/blang/semver"
 	"github.com/joho/godotenv"
+	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	osDialog "github.com/sqweek/dialog"
 )
 
@@ -38,9 +42,81 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 	callback(filePath, nil)
 }
 
+func checkForUpdates(w fyne.Window, showNoUpdatesDialog bool) {
+	go func() {
+		const repo = "Fepozopo/bsc-faire"
+		latest, found, err := selfupdate.DetectLatest(repo)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("update check failed: %w", err), w)
+			return
+		}
+
+		currentVer, _ := semver.Parse(version.Version)
+		if !found || latest.Version.Equals(currentVer) {
+			if showNoUpdatesDialog {
+				dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
+			}
+			return
+		}
+		updateMsg := fmt.Sprintf("A new version (%s) is available. You must update to continue using the application.", latest.Version)
+		dialog.NewCustomConfirm(
+			"Update Required",
+			"Update",
+			"Quit",
+			widget.NewLabel(updateMsg),
+			func(ok bool) {
+				if ok {
+					exe, err := os.Executable()
+					if err != nil {
+						dialog.ShowError(fmt.Errorf("could not locate executable: %w", err), w)
+						return
+					}
+
+					// Show infinite progress bar dialog
+					progress := widget.NewProgressBarInfinite()
+					progressLabel := widget.NewLabel("Updating application...")
+					progressDialog := dialog.NewCustom("Updating", "Cancel", container.NewVBox(progressLabel, progress), w)
+					progressDialog.Show()
+
+					go func() {
+						err = selfupdate.UpdateTo(latest.AssetURL, exe)
+						fyne.Do(func() {
+							progressDialog.Hide()
+							if err != nil {
+								dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
+								return
+							}
+							// Force restart
+							cmd := exec.Command(exe, os.Args[1:]...)
+							cmd.Env = os.Environ()
+							err := cmd.Start()
+							if err != nil {
+								dialog.ShowError(fmt.Errorf("failed to restart: %w", err), w)
+								return
+							}
+							os.Exit(0)
+						})
+					}()
+				} else {
+					os.Exit(0)
+				}
+			},
+			w,
+		).Show()
+	}()
+}
+
 func RunGUI() {
 	myApp := fyneapp.New()
-	w := myApp.NewWindow("Faire GUI")
+	w := myApp.NewWindow(fmt.Sprintf("Faire GUI (version %s)", version.Version))
+
+	// Button: Self-Update
+	updateBtn := widget.NewButton("Check for Updates", func() {
+		checkForUpdates(w, true)
+	})
+
+	// Check for updates on startup (do not show 'No Updates' dialog)
+	checkForUpdates(w, false)
 
 	// Button: Process Shipments CSV
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
@@ -235,7 +311,7 @@ func RunGUI() {
 					fyne.Do(func() {
 						progressDialog.Hide()
 						if err != nil {
-							dialog.ShowError(fmt.Errorf("Export failed: %v", err), w)
+							dialog.ShowError(fmt.Errorf("export failed: %v", err), w)
 						} else {
 							dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d new orders to faire_new_orders.csv", count), w)
 						}
@@ -296,15 +372,15 @@ func RunGUI() {
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	w.SetContent(container.NewVBox(
-		widget.NewLabel("Faire GUI"),
+		widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
 		processBtn,
-		widget.NewLabel(""),
 		exportBtn,
 		widget.NewLabel(""),
 		ordersBtn,
 		orderBtn,
 		widget.NewLabel(""),
 		layout.NewSpacer(),
+		updateBtn,
 		quitBtn,
 	))
 	w.Resize(fyne.NewSize(800, 600))
