@@ -42,7 +42,7 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 	callback(filePath, nil)
 }
 
-func checkForUpdates(w fyne.Window) {
+func checkForUpdates(w fyne.Window, showNoUpdatesDialog bool) {
 	go func() {
 		const repo = "Fepozopo/bsc-faire"
 		latest, found, err := selfupdate.DetectLatest(repo)
@@ -53,7 +53,9 @@ func checkForUpdates(w fyne.Window) {
 
 		currentVer, _ := semver.Parse(version.Version)
 		if !found || latest.Version.Equals(currentVer) {
-			dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
+			if showNoUpdatesDialog {
+				dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
+			}
 			return
 		}
 		updateMsg := fmt.Sprintf("A new version (%s) is available. You must update to continue using the application.", latest.Version)
@@ -110,11 +112,11 @@ func RunGUI() {
 
 	// Button: Self-Update
 	updateBtn := widget.NewButton("Check for Updates", func() {
-		checkForUpdates(w)
+		checkForUpdates(w, true)
 	})
 
-	// Check for updates on startup
-	checkForUpdates(w)
+	// Check for updates on startup (do not show 'No Updates' dialog)
+	checkForUpdates(w, false)
 
 	// Button: Process Shipments CSV
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
