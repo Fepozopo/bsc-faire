@@ -56,9 +56,12 @@ func checkForUpdates(w fyne.Window) {
 			dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
 			return
 		}
-		confirm := dialog.NewConfirm(
-			"Update Available",
-			fmt.Sprintf("Update to version %s?", latest.Version),
+		updateMsg := fmt.Sprintf("A new version (%s) is available. You must update to continue using the application.", latest.Version)
+		dialog.NewCustomConfirm(
+			"Update Required",
+			"Update",
+			"Quit",
+			widget.NewLabel(updateMsg),
 			func(ok bool) {
 				if ok {
 					exe, err := os.Executable()
@@ -92,11 +95,12 @@ func checkForUpdates(w fyne.Window) {
 							os.Exit(0)
 						})
 					}()
+				} else {
+					os.Exit(0)
 				}
 			},
 			w,
-		)
-		confirm.Show()
+		).Show()
 	}()
 }
 
