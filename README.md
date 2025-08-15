@@ -1,20 +1,27 @@
 # Faire API Integration & Order Management Tool
 
+**Version: 1.1.0**
+
 ## Graphical User Interface (GUI)
 
 This project includes both a command-line interface (CLI) and a graphical user interface (GUI) built with the [Fyne](https://fyne.io/) framework, making it accessible for both technical and non-technical users.
 
+**Now distributed as a single binary that can launch either the CLI or GUI.**
+
 ### Features
 
-- **Process Shipments CSV:** Select or specify a CSV file and process shipments, with detailed success/error feedback. Failed shipments are shown in the results. The GUI now displays a progress bar during shipment processing for a more responsive user experience.
-- **Responsive Progress Bar (GUI):** When processing shipments, the GUI shows a modal progress bar dialog until processing is complete, ensuring users see feedback even for long-running operations.
-- **Get All Orders:** Enter a sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) to fetch and display all orders. Advanced filtering by state, limit, and page is supported in CLI.
+- **Self-Update:** Both CLI and GUI support self-updating. The GUI checks for updates on startup and via a "Check for Updates" button. Updates are mandatory if a new version is available, and the app will restart after updating.
+- **Single Binary:** The project builds a single binary (`faire`) that can launch either the CLI or GUI, depending on how it's started (or via a button in the GUI).
+- **Process Shipments CSV:** Select or specify a CSV file and process shipments, with detailed success/error feedback. Failed shipments are shown in the results. The GUI displays a progress bar during shipment processing for a more responsive user experience.
+- **Responsive Progress Bar (GUI):** Progress dialogs are shown during all long-running operations, including shipment processing, order fetching, exporting, and self-update.
+- **Get All Orders:** Enter a sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) to fetch and display all orders. Internal pagination is always used; CLI flags for limit and page have been removed.
 - **Get Order By ID:** Enter a sale source and order ID to fetch and display a specific order.
+- **Export NEW Orders to CSV:** Export all new orders for a sale source to a CSV file, including fields like `commission_cents`, `commission_bps`, `item_quantity`, and more.
 - **Test/Mock Mode:** CLI and GUI support mock processing for testing, with options to simulate failures.
 - **Detailed TUI Feedback:** Both CLI and GUI provide detailed text-based interfaces for viewing processed shipments and orders, including failed shipments.
 - **Native File Dialog & Notifications (GUI):** CSV selection uses the system's native file dialog, and results are shown in scrollable dialogs and system notifications.
-- **.env Support (GUI):** The GUI loads API tokens and mock settings from a `.env` file if present.
-- **Multi-Platform Builds:** Build and run on Windows, Linux, and macOS (ARM/x86_64) using provided Makefile targets. Binaries are named with platform/arch suffixes (e.g., `faire-cli-linux-x86_64`).
+- **.env Support:** Both CLI and GUI load API tokens and mock settings from a `.env` file if present.
+- **Multi-Platform Builds:** Build and run on Windows, Linux, and macOS (ARM/x86_64) using provided Makefile targets. Binaries are named with platform/arch suffixes (e.g., `faire-windows-amd64.exe`).
 
 ### Developer Notes (Fyne v2.6+)
 
@@ -48,30 +55,34 @@ go func() {
     FAIRE_MOCK_FAILS=2,4
     ```
 
-### Building the CLI
+### Building the Project
 
-To build the command-line interface (CLI) version:
+To build for your platform, use the Makefile targets. This will produce platform-specific binaries in the `bin/` directory (e.g., `faire-windows-amd64.exe`, `faire-linux-amd64`, etc).
 
 ```
-make cli
+make windows-amd64   # Windows (AMD64)
+make windows-arm64   # Windows (ARM64)
+make linux-amd64     # Linux (AMD64)
+make linux-arm64     # Linux (ARM64)
+make darwin-arm64    # macOS (ARM64)
 ```
 
-This will produce the `faire-cli-native` binary in the `bin/` directory (or `faire-cli-<platform>` for cross-builds).
+The resulting binary can be used for both CLI and GUI modes.
 
 ### Running the CLI
 
 ```
-./bin/faire-cli-native
+./bin/faire --cli
 ```
 
 ### CLI Usage
 
-The CLI provides the following commands:
+The CLI provides the following commands (run with `./bin/faire --cli ...`):
 
 #### Process Shipments CSV
 
 ```
-./bin/faire-cli-native process [csvfile] [--mock] [--fails indices]
+./bin/faire --cli process [csvfile] [--mock] [--fails indices]
 ```
 
 _Process shipments from a CSV file and add them to Faire orders._
@@ -84,33 +95,31 @@ _Process shipments from a CSV file and add them to Faire orders._
 **Example:**
 
 ```
-./bin/faire-cli-native process csv/Shipments.csv --mock --fails 2,4
+./bin/faire --cli process csv/Shipments.csv --mock --fails 2,4
 ```
 
 #### Get All Orders
 
 ```
-./bin/faire-cli-native orders [sale_source] [--limit N] [--page N] [--states STATE1,STATE2]
+./bin/faire --cli orders [sale_source] [--states STATE1,STATE2]
 ```
 
 _Get all orders by sale source. `sale_source` can be `21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`._
 
 **Flags:**
 
-- `--limit`: Max number of orders to return (10-50, default 50)
-- `--page`: Page number to return (default 1)
 - `--states`: Comma-separated list of states to include (if set, only these states are shown)
 
 **Example:**
 
 ```
-./bin/faire-cli-native orders bsc --limit 25 --page 2 --states NEW,PROCESSING
+./bin/faire --cli orders bsc --states NEW,PROCESSING
 ```
 
 #### Get Order By ID
 
 ```
-./bin/faire-cli-native order [sale_source] [orderID]
+./bin/faire --cli order [sale_source] [orderID]
 ```
 
 _Get a single order by sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) and order ID._
@@ -118,30 +127,43 @@ _Get a single order by sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or 
 **Example:**
 
 ```
-./bin/faire-cli-native order bsc 123456
+./bin/faire --cli order bsc 123456
+```
+
+#### Export NEW Orders to CSV
+
+```
+./bin/faire --cli export [sale_source]
+```
+
+_Export all new orders for a sale source to `faire_new_orders.csv`. The CSV includes fields such as `commission_cents`, `commission_bps`, `item_quantity`, and more._
+
+**Example:**
+
+```
+./bin/faire --cli export bsc
 ```
 
 **Note:** Ensure the required environment variables (`BSC_API_TOKEN`, `SMD_API_TOKEN`, `C21_API_TOKEN`, `ASC_API_TOKEN`, `BJP_API_TOKEN`, `GTG_API_TOKEN`, `OAT_API_TOKEN`) are set before running commands. For other sale sources, set the corresponding API token environment variable.
 
-### Building the GUI
-
-```
-make gui
-```
-
-This will produce the `faire-gui-native` binary in the `bin/` directory (or `faire-gui-<platform>` for cross-builds).
-
 ### Running the GUI
 
 ```
-./bin/faire-gui-native
+./bin/faire
 ```
+
+Or double-click the binary to launch the GUI (on supported platforms).
+
+You can also launch the CLI from within the GUI using the "Launch CLI" button.
 
 ### GUI Usage
 
-1. **Process Shipments CSV:** Click the button and select a CSV file. The app will process the file and show a detailed scrollable dialog and system notification with results, including failed shipments.
-2. **Get All Orders:** Click the button, enter any supported sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`), and view the results in a scrollable dialog.
-3. **Get Order By ID:** Click the button, enter the sale source and order ID, and view the order details in a scrollable dialog.
-4. **Mock/Test Mode:** If `FAIRE_USE_MOCK=1` is set in your `.env`, the GUI will use a mock client for testing. Use `FAIRE_MOCK_FAILS` to simulate failed shipments (e.g., `FAIRE_MOCK_FAILS=2,4`).
-5. **.env Support:** The GUI loads API tokens and mock settings from a `.env` file if present.
-6. **Detailed Results:** All dialogs show detailed results, including failed shipments and all shipment/order fields.
+1. **Self-Update:** The GUI checks for updates on startup and via the "Check for Updates" button. Updates are mandatory if available.
+2. **Process Shipments CSV:** Click the button and select a CSV file. The app will process the file and show a detailed scrollable dialog and system notification with results, including failed shipments.
+3. **Get All Orders:** Click the button, enter any supported sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`), and view the results in a scrollable dialog.
+4. **Get Order By ID:** Click the button, enter the sale source and order ID, and view the order details in a scrollable dialog.
+5. **Export NEW Orders to CSV:** Click the button, enter the sale source, and export all new orders to `faire_new_orders.csv` (includes commission and item details).
+6. **Mock/Test Mode:** If `FAIRE_USE_MOCK=1` is set in your `.env`, the GUI will use a mock client for testing. Use `FAIRE_MOCK_FAILS` to simulate failed shipments (e.g., `FAIRE_MOCK_FAILS=2,4`).
+7. **.env Support:** Both CLI and GUI load API tokens and mock settings from a `.env` file if present.
+8. **Detailed Results:** All dialogs show detailed results, including failed shipments and all shipment/order fields.
+9. **Launch CLI:** Use the "Launch CLI" button to open a terminal window running the CLI version of the app.
