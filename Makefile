@@ -13,14 +13,14 @@ windows-amd64:
 	@echo "Building for Windows with GOOS=windows, GOARCH=amd64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="zig cc -target x86_64-windows" \
-		go build -o bin/$(BINARY)-windows-amd64.exe ./cmd/
+		go build -ldflags="-H=windowsgui" -o bin/$(BINARY)-windows-amd64.exe ./cmd/
 
 # Build for Windows (ARM64)
 windows-arm64:
 	@echo "Building for Windows (ARM64) with GOOS=windows, GOARCH=arm64..."
 	$(call MAKE_BIN_DIR)
 	CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows" \
-		go build -o bin/$(BINARY)-windows-arm64.exe ./cmd/
+		go build -ldflags="-H=windowsgui" -o bin/$(BINARY)-windows-arm64.exe ./cmd/
 
 # Build for Linux (AMD64)
 linux-amd64:
