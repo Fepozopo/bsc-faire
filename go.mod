@@ -6,8 +6,10 @@ toolchain go1.24.5
 
 require (
 	fyne.io/fyne/v2 v2.6.1
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/charmbracelet/bubbletea v1.3.6
 	github.com/joho/godotenv v1.5.1
+	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.0
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 )
@@ -17,7 +19,6 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.9.3 // indirect
@@ -56,7 +57,6 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.5.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rhysd/go-github-selfupdate v1.2.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rymdport/portal v0.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
