@@ -102,7 +102,7 @@ func (m orderListModel) View() string {
 		if m.selected == i {
 			cursor = ">" // cursor
 		}
-		line := fmt.Sprintf("%s [%s] %s | %s | %s\n", cursor, order.DisplayID, order.State, order.CreatedAt.Format("2006-01-02"), order.Address.CompanyName)
+		line := fmt.Sprintf("%s [%s] %s | %s | %s\n", cursor, order.DisplayID, order.State, order.ShipAfter.Format("2006-01-02"), order.Address.CompanyName)
 		b.WriteString(line)
 	}
 	b.WriteString("\nUse ↑/↓ or j/k to move, Enter to view, q to quit.")

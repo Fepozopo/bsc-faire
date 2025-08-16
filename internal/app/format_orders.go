@@ -7,7 +7,7 @@ import (
 
 // FormatOrder returns a formatted string for a single order.
 func FormatOrder(order Order) string {
-	created := order.CreatedAt.Format("2006-01-02 15:04")
+	created := order.CreatedAt.Format("2006-01-02")
 	retailer := order.Address.CompanyName
 	if retailer == "" {
 		retailer = order.Address.Name
@@ -19,12 +19,12 @@ func FormatOrder(order Order) string {
 	}
 
 	s := fmt.Sprintf(
-		"Order ID: %s\nStatus: %s\nRetailer: %s\nCreated: %s\nTotal: $%.2f\n\nItems:\n",
-		order.DisplayID, order.State, retailer, created, float64(totalCents)/100,
+		"Order ID: %s\nStatus: %s\nRetailer: %s\nCreated: %s\nShip By: %s\nTotal: $%.2f\n\nItems:\n",
+		order.DisplayID, order.State, retailer, created, order.ShipAfter.Format("2006-01-02"), float64(totalCents)/100,
 	)
 	for _, item := range order.Items {
-		s += fmt.Sprintf("  - %s (%s) x%d ($%.2f each)\n",
-			item.ProductName, item.Sku, item.Quantity, float64(item.PriceCents)/100)
+		s += fmt.Sprintf("  - %s x%d ($%.2f each) %s\n",
+			item.Sku, item.Quantity, float64(item.PriceCents)/100, item.ProductName)
 	}
 	return s
 }
