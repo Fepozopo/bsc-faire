@@ -1,6 +1,6 @@
 # Faire API Integration & Order Management Tool
 
-**Version: 1.1.0**
+**Version: 1.1.3**
 
 ## Graphical User Interface (GUI)
 
@@ -17,7 +17,9 @@ This project includes both a command-line interface (CLI) and a graphical user i
 - **Get All Orders:** Enter a sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) to fetch and display all orders. Internal pagination is always used; CLI flags for limit and page have been removed.
 - **Get Order By ID:** Enter a sale source and order ID to fetch and display a specific order.
 - **Export NEW Orders to CSV:** Export all new orders for a sale source to a CSV file, including fields like `commission_cents`, `commission_bps`, `item_quantity`, and more.
-- **Test/Mock Mode:** CLI and GUI support mock processing for testing, with options to simulate failures.
+- **Test/Mock Mode:** CLI and GUI support mock processing for testing, with options to simulate failures. The GUI now includes a "Use Mock Server" checkbox and a field to specify which shipment indices should fail (e.g., "2,4").
+- **Improved Mock Client:** The mock client now supports both shipment and order operations, including simulating failures for specific shipments and providing mock order data for testing and demos.
+- **Multi-line Dialogs & Order Formatting:** Order and shipment results are now displayed in improved, multi-line dialogs for better readability. Order formatting in both CLI and GUI has been enhanced.
 - **Detailed TUI Feedback:** Both CLI and GUI provide detailed text-based interfaces for viewing processed shipments and orders, including failed shipments.
 - **Native File Dialog & Notifications (GUI):** CSV selection uses the system's native file dialog, and results are shown in scrollable dialogs and system notifications.
 - **.env Support:** Both CLI and GUI load API tokens and mock settings from a `.env` file if present.
@@ -98,6 +100,8 @@ _Process shipments from a CSV file and add them to Faire orders._
 ./bin/faire --cli process csv/Shipments.csv --mock --fails 2,4
 ```
 
+_Mock mode improvements: The mock client now supports both shipment and order operations. You can specify which shipment indices should fail using `--fails` (e.g., `--fails 2,4`)._
+
 #### Get All Orders
 
 ```
@@ -163,7 +167,8 @@ You can also launch the CLI from within the GUI using the "Launch CLI" button.
 3. **Get All Orders:** Click the button, enter any supported sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`), and view the results in a scrollable dialog.
 4. **Get Order By ID:** Click the button, enter the sale source and order ID, and view the order details in a scrollable dialog.
 5. **Export NEW Orders to CSV:** Click the button, enter the sale source, and export all new orders to `faire_new_orders.csv` (includes commission and item details).
-6. **Mock/Test Mode:** If `FAIRE_USE_MOCK=1` is set in your `.env`, the GUI will use a mock client for testing. Use `FAIRE_MOCK_FAILS` to simulate failed shipments (e.g., `FAIRE_MOCK_FAILS=2,4`).
-7. **.env Support:** Both CLI and GUI load API tokens and mock settings from a `.env` file if present.
-8. **Detailed Results:** All dialogs show detailed results, including failed shipments and all shipment/order fields.
-9. **Launch CLI:** Use the "Launch CLI" button to open a terminal window running the CLI version of the app.
+6. **Mock/Test Mode:** The GUI now uses a "Use Mock Server" checkbox and a field to specify which shipment indices should fail (e.g., "2,4").
+7. **Improved Dialogs & Formatting:** Order and shipment results are now displayed in improved, multi-line dialogs for better readability. Order formatting in both CLI and GUI has been enhanced.
+8. **.env Support:** Both CLI and GUI load API tokens from a `.env` file if present.
+9. **Detailed Results:** All dialogs show detailed results, including failed shipments and all shipment/order fields.
+10. **Launch CLI:** Use the "Launch CLI" button to open a terminal window running the CLI version of the app.

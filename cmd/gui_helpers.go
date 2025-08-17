@@ -13,16 +13,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/Fepozopo/bsc-faire/internal/version"
 	"github.com/blang/semver"
-	"github.com/joho/godotenv"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	osDialog "github.com/sqweek/dialog"
 )
-
-// getMockConfig loads .env if not already loaded and returns mock config.
-func getMockConfig() (mock, mockFails string) {
-	_ = godotenv.Load()
-	return os.Getenv("FAIRE_USE_MOCK"), os.Getenv("FAIRE_MOCK_FAILS")
-}
 
 // openFileWindow creates a file open dialog using the system's native file manager.
 func openFileWindow(parent fyne.Window, callback func(filePath string, e error)) {
