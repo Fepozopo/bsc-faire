@@ -25,8 +25,17 @@ func RunGUI() {
 	checkForUpdates(w, false)
 
 	useMock := false
+	mockFailsEntry := widget.NewEntry()
+	mockFailsEntry.SetPlaceHolder("Mock fail indices (e.g. 1,3,5)")
+	mockFailsEntry.Disable() // Start disabled
+
 	mockCheck := widget.NewCheck("Use Mock Server", func(checked bool) {
 		useMock = checked
+		if checked {
+			mockFailsEntry.Enable()
+		} else {
+			mockFailsEntry.Disable()
+		}
 	})
 
 	// Button: Process Shipments CSV
@@ -67,8 +76,8 @@ func RunGUI() {
 				go func() {
 					var client apppkg.FaireClientInterface
 					if useMock {
-						_, mockFails := getMockConfig() // Only get mockFails from env if needed
 						failMap := map[int]bool{}
+						mockFails := mockFailsEntry.Text
 						if mockFails != "" {
 							for _, s := range strings.Split(mockFails, ",") {
 								if idx, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
@@ -297,8 +306,13 @@ func RunGUI() {
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	w.SetContent(container.NewVBox(
-		widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
-		mockCheck,
+		container.NewHBox(
+			widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
+			layout.NewSpacer(),
+			mockCheck,
+			widget.NewLabel(""),
+			container.NewGridWrap(fyne.NewSize(250, mockFailsEntry.MinSize().Height), mockFailsEntry),
+		),
 		processBtn,
 		exportBtn,
 		widget.NewLabel(""),
