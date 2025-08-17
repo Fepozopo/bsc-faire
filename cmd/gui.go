@@ -21,13 +21,22 @@ func RunGUI() {
 	myApp := fyneapp.New()
 	w := myApp.NewWindow(fmt.Sprintf("Faire GUI (version %s)", version.Version))
 
-	// Button: Self-Update
-	updateBtn := widget.NewButton("Check for Updates", func() {
-		checkForUpdates(w, true)
-	})
-
 	// Check for updates on startup (do not show 'No Updates' dialog)
 	checkForUpdates(w, false)
+
+	useMock := false
+	mockFailsEntry := widget.NewEntry()
+	mockFailsEntry.SetPlaceHolder("Mock fail indices (e.g. 1,3,5)")
+	mockFailsEntry.Disable() // Start disabled
+
+	mockCheck := widget.NewCheck("Use Mock Server", func(checked bool) {
+		useMock = checked
+		if checked {
+			mockFailsEntry.Enable()
+		} else {
+			mockFailsEntry.Disable()
+		}
+	})
 
 	// Button: Process Shipments CSV
 	processBtn := widget.NewButton("Process Shipments CSV", func() {
@@ -65,10 +74,10 @@ func RunGUI() {
 				progressDialog.Show()
 
 				go func() {
-					mock, mockFails := getMockConfig()
 					var client apppkg.FaireClientInterface
-					if mock == "1" {
+					if useMock {
 						failMap := map[int]bool{}
+						mockFails := mockFailsEntry.Text
 						if mockFails != "" {
 							for _, s := range strings.Split(mockFails, ",") {
 								if idx, err := strconv.Atoi(strings.TrimSpace(s)); err == nil {
@@ -90,11 +99,13 @@ func RunGUI() {
 							msg := ""
 							for _, p := range payloads {
 								msg += fmt.Sprintf(
-									"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
-									p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
+									"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
+									p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
 								)
 								if showError && p.ErrorMsg != "" {
-									msg += fmt.Sprintf("    Error: %s\n", p.ErrorMsg)
+									msg += fmt.Sprintf("    SaleSource: %s\n    Error: %s\n\n", p.SaleSource, p.ErrorMsg)
+								} else {
+									msg += fmt.Sprintf("    SaleSource: %s\n\n", p.SaleSource)
 								}
 							}
 							return msg
@@ -138,13 +149,6 @@ func RunGUI() {
 				}()
 			}
 		})
-	})
-
-	// Button: Launch CLI in new terminal window
-	launchCliBtn := widget.NewButton("Launch CLI", func() {
-		if err := launchCLIInTerminal(); err != nil {
-			dialog.ShowError(err, w)
-		}
 	})
 
 	// Button: Get All Orders
@@ -287,10 +291,28 @@ func RunGUI() {
 			}, w)
 	})
 
+	// Button: Launch CLI in new terminal window
+	launchCliBtn := widget.NewButton("Launch CLI", func() {
+		if err := launchCLIInTerminal(); err != nil {
+			dialog.ShowError(err, w)
+		}
+	})
+
+	// Button: Self-Update
+	updateBtn := widget.NewButton("Check for Updates", func() {
+		checkForUpdates(w, true)
+	})
+
 	quitBtn := widget.NewButton("Quit", func() { os.Exit(0) })
 
 	w.SetContent(container.NewVBox(
-		widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
+		container.NewHBox(
+			widget.NewLabel(fmt.Sprintf("Faire GUI (version %s)", version.Version)),
+			layout.NewSpacer(),
+			mockCheck,
+			widget.NewLabel(""),
+			container.NewGridWrap(fyne.NewSize(250, mockFailsEntry.MinSize().Height), mockFailsEntry),
+		),
 		processBtn,
 		exportBtn,
 		widget.NewLabel(""),
