@@ -99,7 +99,7 @@ func RunGUI() {
 							msg := ""
 							for _, p := range payloads {
 								msg += fmt.Sprintf(
-									"  OrderID: %s\n    MakerCostCents: %.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
+									"  OrderID: %s\n    ShippingCost: $%.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
 									apppkg.OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType,
 								)
 								if showError && p.ErrorMsg != "" {
@@ -237,14 +237,23 @@ func RunGUI() {
 				progressDialog := dialog.NewCustom("Exporting", "Cancel", container.NewVBox(progressLabel, progress), w)
 				progressDialog.Show()
 				go func() {
-					client := apppkg.NewFaireClient()
-					count, err := client.ExportNewOrdersToCSV(saleSource, "faire_new_orders.csv")
+					var err error
+					var msg string
+					if useMock {
+						err = apppkg.WriteMockOrdersCSV("faire_new_orders.csv")
+						msg = "Exported CSV headers to faire_new_orders.csv"
+					} else {
+						client := apppkg.NewFaireClient()
+						var count int
+						count, err = client.ExportNewOrdersToCSV(saleSource, "faire_new_orders.csv")
+						msg = fmt.Sprintf("Exported %d new orders to faire_new_orders.csv", count)
+					}
 					fyne.Do(func() {
 						progressDialog.Hide()
 						if err != nil {
 							dialog.ShowError(fmt.Errorf("export failed: %v", err), w)
 						} else {
-							dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d new orders to faire_new_orders.csv", count), w)
+							dialog.ShowInformation("Export Complete", msg, w)
 						}
 					})
 				}()
