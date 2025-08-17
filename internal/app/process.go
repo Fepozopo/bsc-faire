@@ -12,6 +12,13 @@ func DisplayIDToOrderID(displayID string) string {
 	return "bo_" + strings.ToLower(displayID)
 }
 
+func OrderIDToDisplayID(orderID string) string {
+	if !strings.HasPrefix(orderID, "bo_") {
+		return orderID // Return as is if it doesn't match expected format
+	}
+	return strings.ToUpper(strings.TrimPrefix(orderID, "bo_"))
+}
+
 func BillingToShippingType(billing string) string {
 	switch billing {
 	case "Consignee":
