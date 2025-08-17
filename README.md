@@ -16,9 +16,9 @@ This project includes both a command-line interface (CLI) and a graphical user i
 - **Responsive Progress Bar (GUI):** Progress dialogs are shown during all long-running operations, including shipment processing, order fetching, exporting, and self-update.
 - **Get All Orders:** Enter a sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`) to fetch and display all orders. Internal pagination is always used; CLI flags for limit and page have been removed.
 - **Get Order By ID:** Enter a sale source and order ID to fetch and display a specific order.
-- **Export NEW Orders to CSV:** Export all new orders for a sale source to a CSV file, including fields like `commission_cents`, `commission_bps`, `item_quantity`, and more.
-- **Test/Mock Mode:** CLI and GUI support mock processing for testing, with options to simulate failures. The GUI now includes a "Use Mock Server" checkbox and a field to specify which shipment indices should fail (e.g., "2,4").
-- **Improved Mock Client:** The mock client now supports both shipment and order operations, including simulating failures for specific shipments and providing mock order data for testing and demos.
+- **Export NEW Orders to CSV:** Export all new orders for a sale source to a CSV file, including fields like `commission_cents`, `commission_bps`, `item_quantity`, `sale_source`, and more.
+- **Test/Mock Mode:** CLI and GUI support mock processing for testing, with options to simulate failures. The GUI now includes a "Use Mock Server" checkbox and a field to specify which shipment indices should fail (e.g., "2,4"). The export command and GUI export now support mock mode, generating a CSV file with only headers (including `sale_source`) and no data.
+- **Improved Mock Client:** The mock client now supports both shipment and order operations, including simulating failures for specific shipments, providing mock order data for testing and demos, and generating mock CSV exports.
 - **Multi-line Dialogs & Order Formatting:** Order and shipment results are now displayed in improved, multi-line dialogs for better readability. Order formatting in both CLI and GUI has been enhanced.
 - **Detailed TUI Feedback:** Both CLI and GUI provide detailed text-based interfaces for viewing processed shipments and orders, including failed shipments.
 - **Native File Dialog & Notifications (GUI):** CSV selection uses the system's native file dialog, and results are shown in scrollable dialogs and system notifications.
@@ -137,15 +137,19 @@ _Get a single order by sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or 
 #### Export NEW Orders to CSV
 
 ```
-./bin/faire --cli export [sale_source]
+./bin/faire --cli export [sale_source] [--mock]
 ```
 
-_Export all new orders for a sale source to `faire_new_orders.csv`. The CSV includes fields such as `commission_cents`, `commission_bps`, `item_quantity`, and more._
+_Export all new orders for a sale source to `faire_new_orders.csv`. The CSV includes fields such as `commission_cents`, `commission_bps`, `item_quantity`, `sale_source`, and more._
+
+**Flags:**
+
+- `--mock`: Generate a CSV file with only the headers (including `sale_source`), no real API calls or order data.
 
 **Example:**
 
 ```
-./bin/faire --cli export bsc
+./bin/faire --cli export bsc --mock
 ```
 
 **Note:** Ensure the required environment variables (`BSC_API_TOKEN`, `SMD_API_TOKEN`, `C21_API_TOKEN`, `ASC_API_TOKEN`, `BJP_API_TOKEN`, `GTG_API_TOKEN`, `OAT_API_TOKEN`) are set before running commands. For other sale sources, set the corresponding API token environment variable.
@@ -166,8 +170,8 @@ You can also launch the CLI from within the GUI using the "Launch CLI" button.
 2. **Process Shipments CSV:** Click the button and select a CSV file. The app will process the file and show a detailed scrollable dialog and system notification with results, including failed shipments.
 3. **Get All Orders:** Click the button, enter any supported sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`), and view the results in a scrollable dialog.
 4. **Get Order By ID:** Click the button, enter the sale source and order ID, and view the order details in a scrollable dialog.
-5. **Export NEW Orders to CSV:** Click the button, enter the sale source, and export all new orders to `faire_new_orders.csv` (includes commission and item details).
-6. **Mock/Test Mode:** The GUI now uses a "Use Mock Server" checkbox and a field to specify which shipment indices should fail (e.g., "2,4").
+5. **Export NEW Orders to CSV:** Click the button, enter the sale source, and export all new orders to `faire_new_orders.csv` (includes commission, item details, and the `sale_source` column). If "Use Mock Server" is checked, the export will generate a CSV file with only the headers (including `sale_source`) and no data.
+6. **Mock/Test Mode:** The GUI now uses a "Use Mock Server" checkbox and a field to specify which shipment indices should fail (e.g., "2,4"). The mock mode applies to shipment processing and CSV export.
 7. **Improved Dialogs & Formatting:** Order and shipment results are now displayed in improved, multi-line dialogs for better readability. Order formatting in both CLI and GUI has been enhanced.
 8. **.env Support:** Both CLI and GUI load API tokens from a `.env` file if present.
 9. **Detailed Results:** All dialogs show detailed results, including failed shipments and all shipment/order fields.

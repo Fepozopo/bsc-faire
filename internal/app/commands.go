@@ -28,6 +28,7 @@ func init() {
 	ordersCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
 
 	orderCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
+	exportCmd.Flags().BoolVar(&mockFlag, "mock", false, "Generate only CSV headers (no real API calls)")
 }
 
 var processCmd = &cobra.Command{
@@ -191,6 +192,13 @@ var exportCmd = &cobra.Command{
 	Short: "Export NEW orders to a CSV file",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if mockFlag {
+			if err := WriteMockOrdersCSV("faire_new_orders.csv"); err != nil {
+				return err
+			}
+			fmt.Printf("Exported CSV headers to faire_new_orders.csv\n")
+			return nil
+		}
 		client := NewFaireClient()
 		count, err := client.ExportNewOrdersToCSV(args[0], "faire_new_orders.csv")
 		if err != nil {

@@ -1,7 +1,10 @@
 package app
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
+	"os"
 	"time"
 )
 
@@ -77,4 +80,29 @@ func (m *MockFaireClient) GetOrderByID(PONumber string, apiToken string) ([]byte
 		}
 	}
 	return nil, &MockError{"order not found"}
+}
+
+// WriteMockOrdersCSV writes only the CSV headers for mock export (no data)
+func WriteMockOrdersCSV(filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create CSV file: %w", err)
+	}
+	defer file.Close()
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+	header := []string{
+		"id", "display_id", "created_at", "ship_after",
+		"address_name", "address_address1", "address_address2", "address_postal_code",
+		"address_city", "address_state", "address_state_code", "address_phone_number",
+		"address_country", "address_country_code", "address_company_name",
+		"is_free_shipping", "brand_discounts_includes_free_shipping", "brand_discounts_discount_percentage",
+		"payout_costs_commission_bps", "payout_costs_commission_cents",
+		"item_sku", "item_price_cents", "item_quantity",
+		"sale_source",
+	}
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+	return nil
 }
