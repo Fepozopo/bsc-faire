@@ -25,6 +25,9 @@ func init() {
 	processCmd.Flags().StringVar(&failsFlag, "fails", "", "Comma-separated list of shipment indices to fail (mock only)")
 
 	ordersCmd.Flags().StringVar(&statesFlag, "states", "", "Comma-separated list of order states to include (e.g. NEW,DELIVERED)")
+	ordersCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
+
+	orderCmd.Flags().BoolVar(&mockFlag, "mock", false, "Use mock Faire client (no real API calls)")
 }
 
 var processCmd = &cobra.Command{
@@ -59,7 +62,13 @@ var ordersCmd = &cobra.Command{
 	Short: "Get all orders by sale source (21, asc, bjp, bsc, gtg, oat, sm)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := NewFaireClient()
+		var client FaireClientInterface
+		if mockFlag {
+			// Use shared MockOrders from mock_client.go
+			client = &MockFaireClient{Orders: MockOrders}
+		} else {
+			client = NewFaireClient()
+		}
 		var token string
 		if len(args) == 0 {
 			return fmt.Errorf("sale source is required (21, asc, bjp, bsc, gtg, oat, sm)")
@@ -143,7 +152,13 @@ var orderCmd = &cobra.Command{
 	Short: "Get a single order by sale source (sm or bsc) and ID",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := NewFaireClient()
+		var client FaireClientInterface
+		if mockFlag {
+			// Use shared MockOrders from mock_client.go
+			client = &MockFaireClient{Orders: MockOrders}
+		} else {
+			client = NewFaireClient()
+		}
 		if len(args) != 2 {
 			return fmt.Errorf("expected 2 arguments (sale source and order ID), got %d", len(args))
 		}

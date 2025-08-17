@@ -99,8 +99,8 @@ func RunGUI() {
 							msg := ""
 							for _, p := range payloads {
 								msg += fmt.Sprintf(
-									"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
-									p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType,
+									"  OrderID: %s\n    MakerCostCents: %.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
+									apppkg.OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType,
 								)
 								if showError && p.ErrorMsg != "" {
 									msg += fmt.Sprintf("    SaleSource: %s\n    Error: %s\n\n", p.SaleSource, p.ErrorMsg)
@@ -141,7 +141,9 @@ func RunGUI() {
 						if err != nil {
 							dialog.ShowError(fmt.Errorf("%s", msg), w)
 						} else {
-							scroll := container.NewVScroll(widget.NewLabel(msg))
+							entry := widget.NewMultiLineEntry()
+							entry.SetText(msg)
+							scroll := container.NewVScroll(entry)
 							scroll.SetMinSize(fyne.NewSize(380, 250))
 							dialog.ShowCustom("Success", "OK", scroll, w)
 						}
@@ -174,7 +176,12 @@ func RunGUI() {
 				progressDialog.Show()
 
 				go func() {
-					client := apppkg.NewFaireClient()
+					var client apppkg.FaireClientInterface
+					if useMock {
+						client = &apppkg.MockFaireClient{Orders: apppkg.MockOrders}
+					} else {
+						client = apppkg.NewFaireClient()
+					}
 					var allOrders []apppkg.Order
 					currPage := 1
 					for {
@@ -203,7 +210,9 @@ func RunGUI() {
 					fyne.Do(func() {
 						progressDialog.Hide()
 						msg := apppkg.FormatOrders(allOrders)
-						scroll := container.NewVScroll(widget.NewLabel(msg))
+						entry := widget.NewMultiLineEntry()
+						entry.SetText(msg)
+						scroll := container.NewVScroll(entry)
 						scroll.SetMinSize(fyne.NewSize(500, 400))
 						dialog.ShowCustom("Orders", "OK", scroll, w)
 					})
@@ -269,7 +278,12 @@ func RunGUI() {
 				progressDialog.Show()
 
 				go func() {
-					client := apppkg.NewFaireClient()
+					var client apppkg.FaireClientInterface
+					if useMock {
+						client = &apppkg.MockFaireClient{Orders: apppkg.MockOrders}
+					} else {
+						client = apppkg.NewFaireClient()
+					}
 					resp, err := client.GetOrderByID(orderID, token)
 					fyne.Do(func() {
 						progressDialog.Hide()
@@ -283,7 +297,9 @@ func RunGUI() {
 							return
 						}
 						msg := apppkg.FormatOrder(order)
-						scroll := container.NewVScroll(widget.NewLabel(msg))
+						entry := widget.NewMultiLineEntry()
+						entry.SetText(msg)
+						scroll := container.NewVScroll(entry)
 						scroll.SetMinSize(fyne.NewSize(500, 400))
 						dialog.ShowCustom("Order", "OK", scroll, w)
 					})

@@ -38,8 +38,8 @@ func (m processedModel) View() string {
 	} else {
 		for _, p := range m.processed {
 			b.WriteString(fmt.Sprintf(
-				"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
-				p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
+				"  OrderID: %s\n    MakerCostCents: %.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
+				OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
 			))
 		}
 	}
@@ -49,8 +49,8 @@ func (m processedModel) View() string {
 	} else {
 		for _, p := range m.failed {
 			b.WriteString(fmt.Sprintf(
-				"  OrderID: %s\n    MakerCostCents: %d\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
-				p.OrderID, p.MakerCostCents, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
+				"  OrderID: %s\n    MakerCostCents: %.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n    Error: %s\n",
+				OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource, p.ErrorMsg,
 			))
 		}
 	}
