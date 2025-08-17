@@ -1,6 +1,6 @@
 # Faire API Integration & Order Management Tool
 
-**Version: 1.1.3**
+**Version: 1.2.0**
 
 ## Graphical User Interface (GUI)
 
