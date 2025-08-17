@@ -176,7 +176,12 @@ func RunGUI() {
 				progressDialog.Show()
 
 				go func() {
-					client := apppkg.NewFaireClient()
+					var client apppkg.FaireClientInterface
+					if useMock {
+						client = &apppkg.MockFaireClient{Orders: apppkg.MockOrders}
+					} else {
+						client = apppkg.NewFaireClient()
+					}
 					var allOrders []apppkg.Order
 					currPage := 1
 					for {
@@ -273,7 +278,12 @@ func RunGUI() {
 				progressDialog.Show()
 
 				go func() {
-					client := apppkg.NewFaireClient()
+					var client apppkg.FaireClientInterface
+					if useMock {
+						client = &apppkg.MockFaireClient{Orders: apppkg.MockOrders}
+					} else {
+						client = apppkg.NewFaireClient()
+					}
 					resp, err := client.GetOrderByID(orderID, token)
 					fyne.Do(func() {
 						progressDialog.Hide()

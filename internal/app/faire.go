@@ -21,6 +21,8 @@ type FaireClient struct {
 // FaireClientInterface allows mocking of FaireClient for testing
 type FaireClientInterface interface {
 	AddShipment(payload ShipmentPayload, apiToken string) error
+	GetAllOrders(apiToken string, limit int, page int, states string) ([]byte, error)
+	GetOrderByID(PONumber string, apiToken string) ([]byte, error)
 }
 
 type ShipmentRequest struct {
