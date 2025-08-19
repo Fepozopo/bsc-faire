@@ -164,7 +164,7 @@ func RunGUI() {
 				if !ok {
 					return
 				}
-				saleSource := entry.Text
+				saleSource := strings.TrimSpace(entry.Text)
 				token, err := apppkg.GetToken(saleSource)
 				if err != nil || token == "" {
 					dialog.ShowError(fmt.Errorf("invalid or missing token for sale source '%s'", saleSource), w)
@@ -231,7 +231,7 @@ func RunGUI() {
 				if !ok {
 					return
 				}
-				saleSource := entry.Text
+				saleSource := strings.TrimSpace(entry.Text)
 				progress := widget.NewProgressBarInfinite()
 				progressLabel := widget.NewLabel("Exporting new orders to CSV...")
 				progressDialog := dialog.NewCustom("Exporting", "Cancel", container.NewVBox(progressLabel, progress), w)
@@ -274,7 +274,7 @@ func RunGUI() {
 				if !ok {
 					return
 				}
-				saleSource := saleSourceEntry.Text
+				saleSource := strings.TrimSpace(saleSourceEntry.Text)
 				orderID := orderIDEntry.Text
 				token, err := apppkg.GetToken(saleSource)
 				if err != nil || token == "" {

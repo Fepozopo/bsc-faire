@@ -76,7 +76,7 @@ var ordersCmd = &cobra.Command{
 		} else if len(args) > 1 {
 			return fmt.Errorf("too many arguments, expected 1 (got %d)", len(args))
 		} else {
-			saleSource := args[0]
+			saleSource := strings.TrimSpace(args[0])
 			var err error
 			token, err = GetToken(saleSource)
 			if err != nil || token == "" {
@@ -163,7 +163,7 @@ var orderCmd = &cobra.Command{
 		if len(args) != 2 {
 			return fmt.Errorf("expected 2 arguments (sale source and order ID), got %d", len(args))
 		}
-		saleSource := args[0]
+		saleSource := strings.TrimSpace(args[0])
 		var token string
 		var err error
 		token, err = GetToken(saleSource)
@@ -199,8 +199,9 @@ var exportCmd = &cobra.Command{
 			fmt.Printf("Exported CSV headers to faire_new_orders.csv\n")
 			return nil
 		}
+		saleSource := strings.TrimSpace(args[0])
 		client := NewFaireClient()
-		count, err := client.ExportNewOrdersToCSV(args[0], "faire_new_orders.csv")
+		count, err := client.ExportNewOrdersToCSV(saleSource, "faire_new_orders.csv")
 		if err != nil {
 			return err
 		}
