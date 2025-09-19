@@ -1,7 +1,5 @@
 # Faire API Integration & Order Management Tool
 
-**Version: 1.2.1**
-
 ## Graphical User Interface (GUI)
 
 This project includes both a command-line interface (CLI) and a graphical user interface (GUI) built with the [Fyne](https://fyne.io/) framework, making it accessible for both technical and non-technical users.
