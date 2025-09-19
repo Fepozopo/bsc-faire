@@ -32,25 +32,25 @@ func (m processedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m processedModel) View() string {
 	var b strings.Builder
 	b.WriteString("Shipments Processing Results\n\n")
-	b.WriteString(fmt.Sprintf("Processed Shipments (%d):\n", len(m.processed)))
-	if len(m.processed) == 0 {
-		b.WriteString("  None\n")
-	} else {
-		for _, p := range m.processed {
-			b.WriteString(fmt.Sprintf(
-				"  OrderID: %s\n    ShippingCost: $%.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n",
-				OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource,
-			))
-		}
-	}
 	b.WriteString(fmt.Sprintf("\nFailed Shipments (%d):\n", len(m.failed)))
 	if len(m.failed) == 0 {
 		b.WriteString("  None\n")
 	} else {
 		for _, p := range m.failed {
 			b.WriteString(fmt.Sprintf(
-				"  OrderID: %s\n    ShippingCost: $%.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n    SaleSource: %s\n    Error: %s\n",
-				OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType, p.SaleSource, p.ErrorMsg,
+				"  OrderID: %s\n    SaleSource: %s\n    Carrier: %s\n    TrackingCode: %s\n    ShippingCost: $%.2f\n    Error: %s\n",
+				OrderIDToDisplayID(p.OrderID), p.SaleSource, p.Carrier, p.TrackingCode, float32(p.MakerCostCents)/100, p.ErrorMsg,
+			))
+		}
+	}
+	b.WriteString(fmt.Sprintf("Processed Shipments (%d):\n", len(m.processed)))
+	if len(m.processed) == 0 {
+		b.WriteString("  None\n")
+	} else {
+		for _, p := range m.processed {
+			b.WriteString(fmt.Sprintf(
+				"  OrderID: %s\n    SaleSource: %s\n    Carrier: %s\n    TrackingCode: %s\n    ShippingCost: $%.2f\n",
+				OrderIDToDisplayID(p.OrderID), p.SaleSource, p.Carrier, p.TrackingCode, float32(p.MakerCostCents)/100,
 			))
 		}
 	}

@@ -99,13 +99,13 @@ func RunGUI() {
 							msg := ""
 							for _, p := range payloads {
 								msg += fmt.Sprintf(
-									"  OrderID: %s\n    ShippingCost: $%.2f\n    Carrier: %s\n    TrackingCode: %s\n    ShippingType: %s\n",
-									apppkg.OrderIDToDisplayID(p.OrderID), float32(p.MakerCostCents)/100, p.Carrier, p.TrackingCode, p.ShippingType,
+									"  OrderID: %s\n    SaleSource: %s\n    Carrier: %s\n    TrackingCode: %s\n",
+									apppkg.OrderIDToDisplayID(p.OrderID), p.SaleSource, p.Carrier, p.TrackingCode,
 								)
 								if showError && p.ErrorMsg != "" {
-									msg += fmt.Sprintf("    SaleSource: %s\n    Error: %s\n\n", p.SaleSource, p.ErrorMsg)
+									msg += fmt.Sprintf("    ShippingCost: $%.2f\n    Error: %s\n\n", float32(p.MakerCostCents)/100, p.ErrorMsg)
 								} else {
-									msg += fmt.Sprintf("    SaleSource: %s\n\n", p.SaleSource)
+									msg += fmt.Sprintf("    ShippingCost: $%.2f\n\n", float32(p.MakerCostCents)/100)
 								}
 							}
 							return msg

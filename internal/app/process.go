@@ -19,17 +19,6 @@ func OrderIDToDisplayID(orderID string) string {
 	return strings.ToUpper(strings.TrimPrefix(orderID, "bo_"))
 }
 
-func BillingToShippingType(billing string) string {
-	switch billing {
-	case "Consignee":
-		return "SHIP_WITH_FAIRE"
-	case "Prepaid":
-		return "SHIP_ON_YOUR_OWN"
-	default:
-		return "SHIP_ON_YOUR_OWN"
-	}
-}
-
 // ProcessShipments now returns processed and failed shipments as slices of ShipmentPayload
 // and accepts a FaireClientInterface for testability.
 func ProcessShipments(csvPath string, client FaireClientInterface) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
@@ -53,6 +42,8 @@ func ProcessShipments(csvPath string, client FaireClientInterface) (processed []
 		err = parseErr
 		return
 	}
+	shippingType := "SHIP_ON_YOUR_OWN"
+
 	fmt.Fprintf(logFile, "INFO: Parsed %d shipments from CSV\n", len(shipments))
 	for i, s := range shipments {
 		fmt.Fprintf(logFile, "INFO: Processing shipment %d: %+v\n", i+1, s)
@@ -62,13 +53,12 @@ func ProcessShipments(csvPath string, client FaireClientInterface) (processed []
 			continue
 		}
 		orderID := DisplayIDToOrderID(s.PONumber)
-		billingType := BillingToShippingType(s.BillingType)
 		payload := ShipmentPayload{
 			OrderID:        orderID,
 			MakerCostCents: s.MakerCostCents,
 			Carrier:        s.Carrier,
 			TrackingCode:   s.TrackingCode,
-			ShippingType:   billingType,
+			ShippingType:   shippingType,
 			SaleSource:     s.SaleSource,
 		}
 		addErr := client.AddShipment(payload, apiToken)

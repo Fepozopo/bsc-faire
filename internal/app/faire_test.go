@@ -9,18 +9,6 @@ import (
 	"testing"
 )
 
-func TestBillingToShippingType(t *testing.T) {
-	if BillingToShippingType("Consignee") != "SHIP_WITH_FAIRE" {
-		t.Error("Consignee should map to Consignee")
-	}
-	if BillingToShippingType("Prepaid") != "SHIP_ON_YOUR_OWN" {
-		t.Error("Prepaid should map to SHIP_ON_YOUR_OWN")
-	}
-	if BillingToShippingType("Other") != "SHIP_ON_YOUR_OWN" {
-		t.Error("Other should default to SHIP_ON_YOUR_OWN")
-	}
-}
-
 func TestNewFaireClientPanic(t *testing.T) {
 	os.Unsetenv("BSC_API_TOKEN")
 	defer func() {
@@ -69,7 +57,7 @@ func TestAddShipment(t *testing.T) {
 			MakerCostCents: shipment.MakerCostCents,
 			Carrier:        shipment.Carrier,
 			TrackingCode:   shipment.TrackingCode,
-			ShippingType:   BillingToShippingType(shipment.BillingType),
+			ShippingType:   "SHIP_ON_YOUR_OWN",
 		}
 		// Log the payload for debugging
 		b, _ := json.MarshalIndent(payloads[i], "", "  ")
@@ -118,10 +106,6 @@ func TestAddShipment(t *testing.T) {
 		}
 		if got.TrackingCode != shipment.TrackingCode {
 			t.Errorf("TrackingCode mismatch: got %s, want %s", got.TrackingCode, shipment.TrackingCode)
-		}
-		wantType := BillingToShippingType(shipment.BillingType)
-		if got.ShippingType != wantType {
-			t.Errorf("ShippingType mismatch: got %s, want %s", got.ShippingType, wantType)
 		}
 	}
 }
