@@ -78,7 +78,11 @@ type Order struct {
 		DiscountPercentage   float64 `json:"discount_percentage"`
 		DiscountType         string  `json:"discount_type"`
 	} `json:"brand_discounts"`
-	EstimatedPayoutAt time.Time `json:"estimated_payout_at"`
+	RequestedShipDate                     string    `json:"requested_ship_date"`
+	EstimatedPayoutAt                     time.Time `json:"estimated_payout_at"`
+	Notes                                 string    `json:"notes"`
+	HasPendingRetailerCancellationRequest bool      `json:"has_pending_retailer_cancellation_request"`
+	SalesRepName                          string    `json:"sales_rep_name"`
 }
 
 type Orders struct {
