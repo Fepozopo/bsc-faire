@@ -12,28 +12,28 @@ endef
 windows-amd64:
 	@echo "Building for Windows with GOOS=windows, GOARCH=amd64..."
 	$(call MAKE_BIN_DIR)
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="zig cc -target x86_64-windows" \
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="zig cc -target x86_64-windows-gnu" \
 		go build -ldflags="-H=windowsgui -extldflags=-mwindows" -o bin/$(BINARY)-windows-amd64.exe ./cmd/
 
 # Build for Windows (ARM64)
 windows-arm64:
 	@echo "Building for Windows (ARM64) with GOOS=windows, GOARCH=arm64..."
 	$(call MAKE_BIN_DIR)
-	CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows" \
+	CGO_ENABLED=1 GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows-gnu" \
 	    go build -ldflags="-H=windowsgui -extldflags=-mwindows" -o bin/$(BINARY)-windows-arm64.exe ./cmd/
 
 # Build for Linux (AMD64)
 linux-amd64:
 	@echo "Building for Linux with GOOS=linux, GOARCH=amd64..."
 	$(call MAKE_BIN_DIR)
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC="zig cc -target x86_64-linux" \
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC="zig cc -target x86_64-linux-gnu" \
 		go build -o bin/$(BINARY)-linux-amd64 ./cmd/
 
 # Build for Linux (ARM64)
 linux-arm64:
 	@echo "Building for Linux (ARM64) with GOOS=linux, GOARCH=arm64..."
 	$(call MAKE_BIN_DIR)
-	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux" \
+	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux-gnu" \
 		go build -o bin/$(BINARY)-linux-arm64 ./cmd/
 
 # Build for darwin (ARM64)
