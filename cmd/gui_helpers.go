@@ -31,68 +31,75 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 	callback(filePath, nil)
 }
 
-// checkForUpdates checks GitHub for a newer release and optionally confirms when the current version is latest.
+// checkForUpdates checks GitHub for a newer release and presents all update UI on Fyne's main thread.
 func checkForUpdates(w fyne.Window, showNoUpdatesDialog bool) {
 	go func() {
 		const repo = "Fepozopo/bsc-faire"
 		latest, found, err := selfupdate.DetectLatest(repo)
 		if err != nil {
-			dialog.ShowError(fmt.Errorf("update check failed: %w", err), w)
+			fyne.Do(func() {
+				dialog.ShowError(fmt.Errorf("update check failed: %w", err), w)
+			})
 			return
 		}
 
 		currentVer, _ := semver.Parse(version.Version)
 		if !found || latest.Version.Equals(currentVer) {
 			if showNoUpdatesDialog {
-				dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
+				fyne.Do(func() {
+					dialog.ShowInformation("No Updates", "You are already running the latest version.", w)
+				})
 			}
 			return
 		}
-		updateMsg := fmt.Sprintf("A new version (%s) is available. You must update to continue using the application.", latest.Version)
-		dialog.NewCustomConfirm(
-			"Update Required",
-			"Update",
-			"Quit",
-			widget.NewLabel(updateMsg),
-			func(ok bool) {
-				if ok {
-					exe, err := os.Executable()
-					if err != nil {
-						dialog.ShowError(fmt.Errorf("could not locate executable: %w", err), w)
+		updateMsg := fmt.Sprintf("A new version (%s) is available. Update now or continue using the current version.", latest.Version)
+		fyne.Do(func() {
+			dialog.NewCustomConfirm(
+				"Update Available",
+				"Update",
+				"Continue",
+				widget.NewLabel(updateMsg),
+				func(ok bool) {
+					if ok {
+						exe, err := os.Executable()
+						if err != nil {
+							dialog.ShowError(fmt.Errorf("could not locate executable: %w", err), w)
+							return
+						}
+
+						// Show infinite progress bar dialog
+						progress := widget.NewProgressBarInfinite()
+						progressLabel := widget.NewLabel("Updating application...")
+						progressDialog := dialog.NewCustom("Updating", "Cancel", container.NewVBox(progressLabel, progress), w)
+						progressDialog.Show()
+
+						go func() {
+							err = selfupdate.UpdateTo(latest.AssetURL, exe)
+							fyne.Do(func() {
+								progressDialog.Hide()
+								if err != nil {
+									dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
+									return
+								}
+								// Force restart
+								cmd := exec.Command(exe, os.Args[1:]...)
+								cmd.Env = os.Environ()
+								err := cmd.Start()
+								if err != nil {
+									dialog.ShowError(fmt.Errorf("failed to restart: %w", err), w)
+									return
+								}
+								os.Exit(0)
+							})
+						}()
+					} else {
+						// A declined update must not interrupt the user's current work.
 						return
 					}
-
-					// Show infinite progress bar dialog
-					progress := widget.NewProgressBarInfinite()
-					progressLabel := widget.NewLabel("Updating application...")
-					progressDialog := dialog.NewCustom("Updating", "Cancel", container.NewVBox(progressLabel, progress), w)
-					progressDialog.Show()
-
-					go func() {
-						err = selfupdate.UpdateTo(latest.AssetURL, exe)
-						fyne.Do(func() {
-							progressDialog.Hide()
-							if err != nil {
-								dialog.ShowError(fmt.Errorf("update failed: %w", err), w)
-								return
-							}
-							// Force restart
-							cmd := exec.Command(exe, os.Args[1:]...)
-							cmd.Env = os.Environ()
-							err := cmd.Start()
-							if err != nil {
-								dialog.ShowError(fmt.Errorf("failed to restart: %w", err), w)
-								return
-							}
-							os.Exit(0)
-						})
-					}()
-				} else {
-					os.Exit(0)
-				}
-			},
-			w,
-		).Show()
+				},
+				w,
+			).Show()
+		})
 	}()
 }
 
