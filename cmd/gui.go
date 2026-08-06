@@ -17,6 +17,7 @@ import (
 	"github.com/Fepozopo/bsc-faire/internal/version"
 )
 
+// RunGUI creates and runs the Faire graphical application.
 func RunGUI() {
 	myApp := fyneapp.New()
 	w := myApp.NewWindow(fmt.Sprintf("Faire GUI (version %s)", version.Version))
@@ -316,13 +317,6 @@ func RunGUI() {
 			}, w)
 	})
 
-	// Button: Launch CLI in new terminal window
-	launchCliBtn := widget.NewButton("Launch CLI", func() {
-		if err := launchCLIInTerminal(); err != nil {
-			dialog.ShowError(err, w)
-		}
-	})
-
 	// Button: Self-Update
 	updateBtn := widget.NewButton("Check for Updates", func() {
 		checkForUpdates(w, true)
@@ -345,7 +339,6 @@ func RunGUI() {
 		orderBtn,
 		widget.NewLabel(""),
 		layout.NewSpacer(),
-		launchCliBtn,
 		updateBtn,
 		quitBtn,
 	))

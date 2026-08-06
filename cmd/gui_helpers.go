@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -31,6 +29,7 @@ func openFileWindow(parent fyne.Window, callback func(filePath string, e error))
 	callback(filePath, nil)
 }
 
+// checkForUpdates checks GitHub for a newer release and optionally confirms when the current version is latest.
 func checkForUpdates(w fyne.Window, showNoUpdatesDialog bool) {
 	go func() {
 		const repo = "Fepozopo/bsc-faire"
@@ -93,60 +92,4 @@ func checkForUpdates(w fyne.Window, showNoUpdatesDialog bool) {
 			w,
 		).Show()
 	}()
-}
-
-// Cross-platform function to launch CLI in a new terminal window
-func launchCLIInTerminal() error {
-	exePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	binDir := filepath.Dir(exePath)
-
-	switch runtime.GOOS {
-	case "darwin":
-		// macOS: use a temporary shell script to reliably launch CLI in Terminal with --cli
-		tmpScript := filepath.Join(os.TempDir(), "launch_faire_cli.sh")
-		scriptContent := fmt.Sprintf("#!/bin/bash\ncd '%s'\n'%s' --cli\n", binDir, exePath)
-		if err := os.WriteFile(tmpScript, []byte(scriptContent), 0700); err != nil {
-			return err
-		}
-		cmd := exec.Command("open", "-a", "Terminal", tmpScript)
-		fmt.Println("Launching CLI with script:", tmpScript)
-		return cmd.Start()
-	case "windows":
-		// Windows: use a temporary batch script to cd and launch CLI with --cli
-		tmpScript := filepath.Join(os.TempDir(), "launch_faire_cli.bat")
-		scriptContent := fmt.Sprintf("cd /d \"%s\"\r\n\"%s\" --cli\r\npause\r\n", binDir, exePath)
-		if err := os.WriteFile(tmpScript, []byte(scriptContent), 0700); err != nil {
-			return err
-		}
-		cmd := exec.Command("cmd", "/C", "start", "", tmpScript)
-		fmt.Println("Launching CLI with script:", tmpScript)
-		return cmd.Start()
-	case "linux":
-		// Linux: use a temporary shell script to cd and launch CLI with --cli
-		tmpScript := filepath.Join(os.TempDir(), "launch_faire_cli.sh")
-		scriptContent := fmt.Sprintf("#!/bin/bash\ncd '%s'\n'%s' --cli\nexec bash\n", binDir, exePath)
-		if err := os.WriteFile(tmpScript, []byte(scriptContent), 0700); err != nil {
-			return err
-		}
-		terminals := [][]string{
-			{"gnome-terminal", "--", tmpScript},
-			{"x-terminal-emulator", "-e", tmpScript},
-			{"xterm", "-e", tmpScript},
-		}
-		var lastErr error
-		for _, term := range terminals {
-			cmd := exec.Command(term[0], term[1:]...)
-			if err := cmd.Start(); err == nil {
-				return nil
-			} else {
-				lastErr = err
-			}
-		}
-		return lastErr
-	default:
-		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
-	}
 }
