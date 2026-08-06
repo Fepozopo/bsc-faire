@@ -151,6 +151,12 @@ func newOrderExportButton(parent fyne.Window, useMock func() bool, configuration
 				filter.OrderIdentifiers = apppkg.ParseOrderIdentifiers(orderIDsEntry.Text)
 			}
 
+			outputPath, err := apppkg.DownloadsFilePath(configuration.Filename)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("prepare export destination: %w", err), parent)
+				return
+			}
+
 			progress := widget.NewProgressBarInfinite()
 			progressLabel := widget.NewLabel(configuration.ProgressMessage)
 			progressDialog := dialog.NewCustom("Exporting", "Cancel", container.NewVBox(progressLabel, progress), parent)
@@ -164,14 +170,14 @@ func newOrderExportButton(parent fyne.Window, useMock func() bool, configuration
 					client = apppkg.NewFaireClient()
 				}
 
-				count, err := apppkg.ExportOrdersToCSV(client, apiToken, saleSource, configuration.Filename, filter)
+				count, err := apppkg.ExportOrdersToCSV(client, apiToken, saleSource, outputPath, filter)
 				fyne.Do(func() {
 					progressDialog.Hide()
 					if err != nil {
 						dialog.ShowError(fmt.Errorf("export failed: %w", err), parent)
 						return
 					}
-					dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d orders to %s", count, configuration.Filename), parent)
+					dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d orders to %s", count, outputPath), parent)
 				})
 			}()
 		}, parent)

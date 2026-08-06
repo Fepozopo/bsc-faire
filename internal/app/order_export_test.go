@@ -106,6 +106,23 @@ func TestExportOrdersToCSVByIdentifiers(t *testing.T) {
 	}
 }
 
+// TestDownloadsFilePath returns a created Downloads path under the current user's home directory.
+func TestDownloadsFilePath(t *testing.T) {
+	homeDirectory := t.TempDir()
+	t.Setenv("HOME", homeDirectory)
+
+	path, err := DownloadsFilePath("orders.csv")
+	if err != nil {
+		t.Fatalf("DownloadsFilePath returned an error: %v", err)
+	}
+	if want := filepath.Join(homeDirectory, "Downloads", "orders.csv"); path != want {
+		t.Errorf("DownloadsFilePath() = %q, want %q", path, want)
+	}
+	if info, err := os.Stat(filepath.Dir(path)); err != nil || !info.IsDir() {
+		t.Errorf("Downloads directory was not created: %v", err)
+	}
+}
+
 // TestExportOrdersToCSVRejectsAnEmptyFilter prevents an accidental unfiltered order export.
 func TestExportOrdersToCSVRejectsAnEmptyFilter(t *testing.T) {
 	_, err := ExportOrdersToCSV(&exportTestClient{}, "token", "bsc", filepath.Join(t.TempDir(), "orders.csv"), OrderExportFilter{})

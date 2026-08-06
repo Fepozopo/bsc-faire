@@ -46,11 +46,9 @@ darwin-arm64:
 # Build all targets
 all: windows-amd64 windows-arm64 linux-amd64 linux-arm64 darwin-arm64
 
-# Clean target to remove generated binaries and bin folder if needed
+# Clean target removes generated binaries.
 clean:
-	@echo "Cleaning generated binaries and logs..."
-	@rm -rf logs 2>/dev/null
-	@rm -rf internal/app/logs 2>/dev/null
+	@echo "Cleaning generated binaries..."
 	@rm -rf bin 2>/dev/null
 
 .PHONY: native windows-amd64 windows-arm64 linux-amd64 linux-arm64 darwin-arm64 all clean

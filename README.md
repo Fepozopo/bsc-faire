@@ -7,9 +7,9 @@ A graphical application for managing Faire orders and shipments. It is built wit
 - **Process shipments CSV:** Select a CSV file and add its shipments to Faire orders, with detailed success and failure feedback.
 - **Get all orders:** Fetch and display orders for a supported sale source (`21`, `asc`, `bjp`, `bsc`, `gtg`, `oat`, or `sm`).
 - **Get order by ID:** Retrieve and display one order by its sale source and display ID.
-- **Export NEW orders:** Export all new orders for a sale source to `faire_new_orders.csv`.
-- **Export selected orders:** Enter a comma-, semicolon-, or line-separated list of display IDs or `bo_` IDs to export exactly those orders to `faire_selected_orders.csv`.
-- **Export BACKORDERED orders:** Export all backordered orders for a sale source to `faire_backordered_orders.csv`. The API request inverse-filters every other known Faire order state.
+- **Export NEW orders:** Export all new orders for a sale source to `~/Downloads/faire_new_orders.csv`.
+- **Export selected orders:** Enter a comma-, semicolon-, or line-separated list of display IDs or `bo_` IDs to export exactly those orders to `~/Downloads/faire_selected_orders.csv`.
+- **Export BACKORDERED orders:** Export all backordered orders for a sale source to `~/Downloads/faire_backordered_orders.csv`. The API request inverse-filters every other known Faire order state.
 - **Mock/test mode:** Use the mock client for demos and tests, including optional simulated shipment failures.
 - **Self-update:** Check for application updates at startup or with the **Check for Updates** button.
 - **Native file selection and notifications:** Use the system file picker to choose CSV files and display operation results in the GUI.
@@ -60,8 +60,8 @@ You can also double-click the binary on platforms that support it.
 1. **Process Shipments CSV:** Select a CSV file, confirm it, and view the detailed result dialog.
 2. **Get All Orders:** Enter a supported sale source to retrieve its active orders.
 3. **Get Order By ID:** Enter the sale source and display ID to view one order.
-4. **Export NEW Orders to CSV:** Enter a sale source to create `faire_new_orders.csv`.
-5. **Export Selected Orders to CSV:** Enter a sale source and a list of display IDs or `bo_` IDs. Separate IDs with commas, semicolons, or new lines to create `faire_selected_orders.csv`.
-6. **Export BACKORDERED Orders to CSV:** Enter a sale source to create `faire_backordered_orders.csv`.
+4. **Export NEW Orders to CSV:** Enter a sale source to create `~/Downloads/faire_new_orders.csv`.
+5. **Export Selected Orders to CSV:** Enter a sale source and a list of display IDs or `bo_` IDs. Separate IDs with commas, semicolons, or new lines to create `~/Downloads/faire_selected_orders.csv`.
+6. **Export BACKORDERED Orders to CSV:** Enter a sale source to create `~/Downloads/faire_backordered_orders.csv`.
 7. **Mock/Test Mode:** Enable **Use Mock Server** and optionally specify failing shipment indices such as `2,4`.
 8. **Check for Updates:** Use the button to manually check for a newer application version.

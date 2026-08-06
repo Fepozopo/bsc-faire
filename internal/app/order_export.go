@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -45,16 +46,19 @@ var faireOrderStates = []string{
 }
 
 // ExportNewOrdersToCSV exports all NEW orders for saleSource to filename and returns the order count.
+// Relative filenames are created in the user's Downloads folder; absolute filenames are honored.
 func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, error) {
 	return c.exportOrdersForState(saleSource, filename, OrderStateNew)
 }
 
 // ExportBackorderedOrdersToCSV exports all BACKORDERED orders for saleSource to filename and returns the order count.
+// Relative filenames are created in the user's Downloads folder; absolute filenames are honored.
 func (c *FaireClient) ExportBackorderedOrdersToCSV(saleSource, filename string) (int, error) {
 	return c.exportOrdersForState(saleSource, filename, OrderStateBackordered)
 }
 
 // ExportOrdersByIDsToCSV exports the supplied display IDs or Faire bo_ IDs for saleSource to filename.
+// Relative filenames are created in the user's Downloads folder; absolute filenames are honored.
 func (c *FaireClient) ExportOrdersByIDsToCSV(saleSource, filename string, orderIdentifiers []string) (int, error) {
 	token, err := tokenForSaleSource(saleSource)
 	if err != nil {
@@ -67,7 +71,7 @@ func (c *FaireClient) ExportOrdersByIDsToCSV(saleSource, filename string, orderI
 }
 
 // ExportOrdersToCSV retrieves the orders selected by filter and writes them to filename.
-// apiToken authenticates requests, saleSource is recorded in the CSV, and the return value is the order count.
+// apiToken authenticates requests, saleSource is recorded in the CSV, and relative filenames are created in Downloads.
 func ExportOrdersToCSV(client OrderClient, apiToken, saleSource, filename string, filter OrderExportFilter) (int, error) {
 	if err := filter.validate(); err != nil {
 		return 0, err
@@ -227,13 +231,37 @@ func isKnownOrderState(state string) bool {
 	return false
 }
 
-// writeOrdersCSV writes orders to filename using saleSource in each CSV row.
-func writeOrdersCSV(filename, saleSource string, orders []Order) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("create CSV file: %w", err)
+// DownloadsFilePath returns the path for filename in the current user's Downloads folder.
+// It creates the folder when necessary and rejects an empty filename.
+func DownloadsFilePath(filename string) (string, error) {
+	filename = strings.TrimSpace(filename)
+	if filename == "" || filepath.Base(filename) != filename {
+		return "", fmt.Errorf("downloads filename must not be empty or contain a directory")
 	}
-	defer file.Close()
+
+	homeDirectory, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("find user home directory: %w", err)
+	}
+	downloadsDirectory := filepath.Join(homeDirectory, "Downloads")
+	if err := os.MkdirAll(downloadsDirectory, 0755); err != nil {
+		return "", fmt.Errorf("create Downloads directory: %w", err)
+	}
+	return filepath.Join(downloadsDirectory, filename), nil
+}
+
+// writeOrdersCSV writes orders to filename using saleSource in each CSV row.
+// A relative filename is written to Downloads, while an absolute filename is preserved for callers that choose a destination.
+func writeOrdersCSV(filename, saleSource string, orders []Order) error {
+	destination, err := resolveCSVPath(filename)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(destination)
+	if err != nil {
+		return fmt.Errorf("create CSV file %q: %w", destination, err)
+	}
+	defer func() { _ = file.Close() }()
 
 	writer := csv.NewWriter(file)
 	if err := writer.Write(orderCSVHeader); err != nil {
@@ -251,6 +279,14 @@ func writeOrdersCSV(filename, saleSource string, orders []Order) error {
 		return fmt.Errorf("flush CSV: %w", err)
 	}
 	return nil
+}
+
+// resolveCSVPath sends relative CSV filenames to Downloads while preserving explicit absolute output paths.
+func resolveCSVPath(filename string) (string, error) {
+	if filepath.IsAbs(filename) {
+		return filename, nil
+	}
+	return DownloadsFilePath(filename)
 }
 
 // writeOrderCSVRows writes one CSV row per item in order.

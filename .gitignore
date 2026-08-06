@@ -1,7 +1,5 @@
 .env
 csv/
 bin/
-logs/
-internal/app/logs
-faire_new_orders.csv
+
 .codebase-memory/
