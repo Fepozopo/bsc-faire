@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	apppkg "github.com/Fepozopo/bsc-faire/internal/app"
 	"github.com/Fepozopo/bsc-faire/internal/version"
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
@@ -92,4 +94,79 @@ func checkForUpdates(w fyne.Window, showNoUpdatesDialog bool) {
 			w,
 		).Show()
 	}()
+}
+
+// orderExportConfiguration describes one CSV export action presented in the GUI.
+type orderExportConfiguration struct {
+	ButtonLabel     string
+	FormTitle       string
+	ProgressMessage string
+	Filename        string
+	State           string
+	UsesOrderIDs    bool
+}
+
+// newOrderExportButton creates an order-export button that uses the live or mock client selected by useMock.
+func newOrderExportButton(parent fyne.Window, useMock func() bool, configuration orderExportConfiguration) *widget.Button {
+	return widget.NewButton(configuration.ButtonLabel, func() {
+		saleSourceEntry := widget.NewEntry()
+		saleSourceEntry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
+
+		formItems := []*widget.FormItem{
+			widget.NewFormItem("Sale Source", saleSourceEntry),
+		}
+		orderIDsEntry := widget.NewMultiLineEntry()
+		if configuration.UsesOrderIDs {
+			orderIDsEntry.SetPlaceHolder("One display ID or bo_ ID per line; commas and semicolons also work")
+			orderIDsEntry.SetMinRowsVisible(4)
+			formItems = append(formItems, widget.NewFormItem("Order IDs", orderIDsEntry))
+		}
+
+		dialog.ShowForm(configuration.FormTitle, "Export", "Cancel", formItems, func(ok bool) {
+			if !ok {
+				return
+			}
+
+			saleSource := strings.TrimSpace(saleSourceEntry.Text)
+			apiToken := "mock-token"
+			if !useMock() {
+				var err error
+				apiToken, err = apppkg.GetToken(saleSource)
+				if err != nil || apiToken == "" {
+					dialog.ShowError(fmt.Errorf("invalid or missing token for sale source %q", saleSource), parent)
+					return
+				}
+			}
+
+			filter := apppkg.OrderExportFilter{State: configuration.State}
+			if configuration.UsesOrderIDs {
+				filter.State = ""
+				filter.OrderIdentifiers = apppkg.ParseOrderIdentifiers(orderIDsEntry.Text)
+			}
+
+			progress := widget.NewProgressBarInfinite()
+			progressLabel := widget.NewLabel(configuration.ProgressMessage)
+			progressDialog := dialog.NewCustom("Exporting", "Cancel", container.NewVBox(progressLabel, progress), parent)
+			progressDialog.Show()
+
+			go func() {
+				var client apppkg.OrderClient
+				if useMock() {
+					client = &apppkg.MockFaireClient{Orders: apppkg.MockOrders}
+				} else {
+					client = apppkg.NewFaireClient()
+				}
+
+				count, err := apppkg.ExportOrdersToCSV(client, apiToken, saleSource, configuration.Filename, filter)
+				fyne.Do(func() {
+					progressDialog.Hide()
+					if err != nil {
+						dialog.ShowError(fmt.Errorf("export failed: %w", err), parent)
+						return
+					}
+					dialog.ShowInformation("Export Complete", fmt.Sprintf("Exported %d orders to %s", count, configuration.Filename), parent)
+				})
+			}()
+		}, parent)
+	})
 }

@@ -17,7 +17,7 @@ import (
 	"github.com/Fepozopo/bsc-faire/internal/version"
 )
 
-// RunGUI creates and runs the Faire graphical application.
+// RunGUI creates and runs the Faire graphical application, including shipment processing and order retrieval/export actions.
 func RunGUI() {
 	myApp := fyneapp.New()
 	w := myApp.NewWindow(fmt.Sprintf("Faire GUI (version %s)", version.Version))
@@ -221,44 +221,27 @@ func RunGUI() {
 			}, w)
 	})
 
-	// Button: Export NEW Orders to CSV
-	exportBtn := widget.NewButton("Export NEW Orders to CSV", func() {
-		entry := widget.NewEntry()
-		entry.SetPlaceHolder("Enter sale source: 21, asc, bjp, bsc, gtg, oat, or sm")
-		dialog.ShowForm("Export NEW Orders", "Export", "Cancel",
-			[]*widget.FormItem{
-				widget.NewFormItem("Sale Source", entry),
-			}, func(ok bool) {
-				if !ok {
-					return
-				}
-				saleSource := strings.TrimSpace(entry.Text)
-				progress := widget.NewProgressBarInfinite()
-				progressLabel := widget.NewLabel("Exporting new orders to CSV...")
-				progressDialog := dialog.NewCustom("Exporting", "Cancel", container.NewVBox(progressLabel, progress), w)
-				progressDialog.Show()
-				go func() {
-					var err error
-					var msg string
-					if useMock {
-						err = apppkg.WriteMockOrdersCSV("faire_new_orders.csv")
-						msg = "Exported CSV headers to faire_new_orders.csv"
-					} else {
-						client := apppkg.NewFaireClient()
-						var count int
-						count, err = client.ExportNewOrdersToCSV(saleSource, "faire_new_orders.csv")
-						msg = fmt.Sprintf("Exported %d new orders to faire_new_orders.csv", count)
-					}
-					fyne.Do(func() {
-						progressDialog.Hide()
-						if err != nil {
-							dialog.ShowError(fmt.Errorf("export failed: %v", err), w)
-						} else {
-							dialog.ShowInformation("Export Complete", msg, w)
-						}
-					})
-				}()
-			}, w)
+	// Order export actions share the same CSV writer and differ only in their retrieval filter.
+	exportNewBtn := newOrderExportButton(w, func() bool { return useMock }, orderExportConfiguration{
+		ButtonLabel:     "Export NEW Orders to CSV",
+		FormTitle:       "Export NEW Orders",
+		ProgressMessage: "Exporting new orders to CSV...",
+		Filename:        "faire_new_orders.csv",
+		State:           apppkg.OrderStateNew,
+	})
+	exportSelectedBtn := newOrderExportButton(w, func() bool { return useMock }, orderExportConfiguration{
+		ButtonLabel:     "Export Selected Orders to CSV",
+		FormTitle:       "Export Selected Orders",
+		ProgressMessage: "Exporting selected orders to CSV...",
+		Filename:        "faire_selected_orders.csv",
+		UsesOrderIDs:    true,
+	})
+	exportBackorderedBtn := newOrderExportButton(w, func() bool { return useMock }, orderExportConfiguration{
+		ButtonLabel:     "Export BACKORDERED Orders to CSV",
+		FormTitle:       "Export BACKORDERED Orders",
+		ProgressMessage: "Exporting backordered orders to CSV...",
+		Filename:        "faire_backordered_orders.csv",
+		State:           apppkg.OrderStateBackordered,
 	})
 
 	// Button: Get Order By ID
@@ -333,7 +316,9 @@ func RunGUI() {
 			container.NewGridWrap(fyne.NewSize(250, mockFailsEntry.MinSize().Height), mockFailsEntry),
 		),
 		processBtn,
-		exportBtn,
+		exportNewBtn,
+		exportSelectedBtn,
+		exportBackorderedBtn,
 		widget.NewLabel(""),
 		ordersBtn,
 		orderBtn,
