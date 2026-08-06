@@ -1,17 +1,13 @@
 package app
 
-import (
-	"fmt"
-	"os"
-	"strings"
-	"time"
-)
+import "strings"
 
 // DisplayIDToOrderID converts a display ID (e.g., "BXDMJBWXID") to an order ID (e.g., "bo_bxdmjbwxid").
 func DisplayIDToOrderID(displayID string) string {
 	return "bo_" + strings.ToLower(displayID)
 }
 
+// OrderIDToDisplayID converts a Faire bo_ order ID to its uppercase display ID.
 func OrderIDToDisplayID(orderID string) string {
 	if !strings.HasPrefix(orderID, "bo_") {
 		return orderID // Return as is if it doesn't match expected format
@@ -19,34 +15,16 @@ func OrderIDToDisplayID(orderID string) string {
 	return strings.ToUpper(strings.TrimPrefix(orderID, "bo_"))
 }
 
-// ProcessShipments now returns processed and failed shipments as slices of ShipmentPayload
-// and accepts a FaireClientInterface for testability.
+// ProcessShipments submits shipments from csvPath and returns the successful and failed payloads.
+// client performs Faire API requests, and err reports CSV parsing failures.
 func ProcessShipments(csvPath string, client FaireClientInterface) (processed []ShipmentPayload, failed []ShipmentPayload, err error) {
-	// Ensure logs directory exists
-	logDir := "logs"
-	if mkErr := os.MkdirAll(logDir, 0755); mkErr != nil {
-		err = fmt.Errorf("failed to create logs directory: %w", mkErr)
-		return
-	}
-	// Create log file with timestamp
-	logFileName := fmt.Sprintf("%s/%s.txt", logDir, time.Now().Format("20060102_150405"))
-	logFile, fileErr := os.Create(logFileName)
-	if fileErr != nil {
-		err = fmt.Errorf("failed to create log file: %w", fileErr)
-		return
-	}
-	defer logFile.Close()
-
 	shipments, parseErr := ParseShipmentsCSV(csvPath)
 	if parseErr != nil {
 		err = parseErr
 		return
 	}
 	shippingType := "SHIP_ON_YOUR_OWN"
-
-	fmt.Fprintf(logFile, "INFO: Parsed %d shipments from CSV\n", len(shipments))
-	for i, s := range shipments {
-		fmt.Fprintf(logFile, "INFO: Processing shipment %d: %+v\n", i+1, s)
+	for _, s := range shipments {
 		apiToken, tokenErr := GetToken(s.SaleSource)
 		if tokenErr != nil || apiToken == "" {
 			// Should not happen due to ParseShipmentsCSV, but skip just in case
@@ -63,14 +41,12 @@ func ProcessShipments(csvPath string, client FaireClientInterface) (processed []
 		}
 		addErr := client.AddShipment(payload, apiToken)
 		if addErr != nil {
-			fmt.Fprintf(logFile, "ERROR: Failed to add shipment: %v\n", addErr)
-			payload.ErrorMsg = addErr.Error() // Attach error message to payload
+			// Preserve the API error in the result so the GUI can show the user which shipment failed.
+			payload.ErrorMsg = addErr.Error()
 			failed = append(failed, payload)
 		} else {
-			fmt.Fprintf(logFile, "INFO: Successfully processed shipment\n")
 			processed = append(processed, payload)
 		}
 	}
-	fmt.Fprintf(logFile, "INFO: Finished processing. %d processed, %d failed\n", len(processed), len(failed))
 	return
 }

@@ -2,11 +2,11 @@ package app
 
 import (
 	"bytes"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -14,21 +14,24 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// FaireClient sends authenticated requests to the Faire Orders API.
 type FaireClient struct {
 	BaseURL string
 }
 
-// FaireClientInterface allows mocking of FaireClient for testing
+// FaireClientInterface defines the Faire operations used by the application.
 type FaireClientInterface interface {
 	AddShipment(payload ShipmentPayload, apiToken string) error
-	GetAllOrders(apiToken string, limit int, page int, states string) ([]byte, error)
-	GetOrderByID(PONumber string, apiToken string) ([]byte, error)
+	GetAllOrders(apiToken string, limit int, page int, excludedStates string) ([]byte, error)
+	GetOrderByID(orderIdentifier string, apiToken string) ([]byte, error)
 }
 
+// ShipmentRequest is the request body accepted by Faire's shipment endpoint.
 type ShipmentRequest struct {
 	Shipments []ShipmentPayload `json:"shipments"`
 }
 
+// ShipmentPayload describes a shipment that will be attached to an order.
 type ShipmentPayload struct {
 	OrderID        string `json:"order_id"`
 	MakerCostCents int    `json:"maker_cost_cents"`
@@ -39,169 +42,101 @@ type ShipmentPayload struct {
 	ErrorMsg       string `json:"error_msg"`
 }
 
+// NewFaireClient loads the Faire base URL from the environment and returns a client.
 func NewFaireClient() *FaireClient {
-	godotenv.Load()
+	_ = godotenv.Load()
 	return &FaireClient{
 		BaseURL: os.Getenv("FAIRE_BASE_URL"),
 	}
 }
 
+// AddShipment adds payload to its order using apiToken and returns an API or transport error.
 func (c *FaireClient) AddShipment(payload ShipmentPayload, apiToken string) error {
-	url := fmt.Sprintf("%s/orders/%s/shipments", c.BaseURL, payload.OrderID)
-	body, _ := json.Marshal(ShipmentRequest{Shipments: []ShipmentPayload{payload}})
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	endpoint := fmt.Sprintf("%s/orders/%s/shipments", strings.TrimRight(c.BaseURL, "/"), url.PathEscape(payload.OrderID))
+	body, err := json.Marshal(ShipmentRequest{Shipments: []ShipmentPayload{payload}})
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal shipment request: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(body))
+	if err != nil {
+		return fmt.Errorf("create shipment request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
+
+	return c.doRequest(req)
+}
+
+// GetAllOrders returns one page of orders while excluding the supplied Faire order states.
+func (c *FaireClient) GetAllOrders(apiToken string, limit int, page int, excludedStates string) ([]byte, error) {
+	endpoint, err := url.Parse(strings.TrimRight(c.BaseURL, "/") + "/orders")
+	if err != nil {
+		return nil, fmt.Errorf("parse orders endpoint: %w", err)
+	}
+
+	query := endpoint.Query()
+	query.Set("limit", strconv.Itoa(limit))
+	query.Set("page", strconv.Itoa(page))
+	query.Set("excluded_states", excludedStates)
+	endpoint.RawQuery = query.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("create orders request: %w", err)
+	}
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
+
+	return c.readResponse(req)
+}
+
+// GetOrderByID returns the order identified by a display ID or a Faire bo_ order ID.
+func (c *FaireClient) GetOrderByID(orderIdentifier string, apiToken string) ([]byte, error) {
+	orderID := OrderIdentifierToOrderID(orderIdentifier)
+	if orderID == "" {
+		return nil, fmt.Errorf("order identifier cannot be empty")
+	}
+
+	endpoint := fmt.Sprintf("%s/orders/%s", strings.TrimRight(c.BaseURL, "/"), url.PathEscape(orderID))
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create order request: %w", err)
+	}
+	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
+
+	return c.readResponse(req)
+}
+
+// doRequest sends req and returns a descriptive error unless Faire returns a successful status.
+func (c *FaireClient) doRequest(req *http.Request) error {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("faire API error: %s", string(b))
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return nil
 	}
-	return nil
+
+	body, _ := io.ReadAll(resp.Body)
+	return fmt.Errorf("faire API error (%s): %s", resp.Status, strings.TrimSpace(string(body)))
 }
 
-func (c *FaireClient) GetAllOrders(apiToken string, limit int, page int, states string) ([]byte, error) {
-	url := fmt.Sprintf("%s/orders?limit=%d&page=%d&excluded_states=%s", c.BaseURL, limit, page, states)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
+// readResponse sends req and returns its body when Faire returns a successful status.
+func (c *FaireClient) readResponse(req *http.Request) ([]byte, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
-}
+	defer func() { _ = resp.Body.Close() }()
 
-func (c *FaireClient) GetOrderByID(PONumber string, apiToken string) ([]byte, error) {
-	orderID := DisplayIDToOrderID(PONumber)
-	url := fmt.Sprintf("%s/orders/%s", c.BaseURL, orderID)
-	req, err := http.NewRequest("GET", url, nil)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read Faire API response: %w", err)
 	}
-	req.Header.Set("X-FAIRE-ACCESS-TOKEN", apiToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("faire API error (%s): %s", resp.Status, strings.TrimSpace(string(body)))
 	}
-	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
-}
-
-// ExportNewOrdersToCSV exports new orders for the given sale source to a CSV file.
-// Returns the number of exported orders and any error.
-func (c *FaireClient) ExportNewOrdersToCSV(saleSource, filename string) (int, error) {
-	token, err := GetToken(saleSource)
-	if err != nil || token == "" {
-		return 0, fmt.Errorf("invalid or missing token for sale source '%s'", saleSource)
-	}
-
-	// Paginate through all orders and collect NEW ones
-	limit := 50
-	page := 1
-	states := "DELIVERED,BACKORDERED,CANCELED,PROCESSING,PRE_TRANSIT,IN_TRANSIT,RETURNED,PENDING_RETAILER_CONFIRMATION,DAMAGED_OR_MISSING"
-	var newOrders []Order
-
-	for {
-		resp, err := c.GetAllOrders(token, limit, page, states)
-		if err != nil {
-			return 0, err
-		}
-		var ordersResp Orders
-		if err := json.Unmarshal(resp, &ordersResp); err != nil {
-			return 0, fmt.Errorf("failed to parse orders: %w", err)
-		}
-		foundNew := 0
-		for _, order := range ordersResp.Orders {
-			if strings.ToUpper(order.State) == "NEW" {
-				newOrders = append(newOrders, order)
-				foundNew++
-			}
-		}
-		if len(ordersResp.Orders) < limit {
-			break // last page
-		}
-		page++
-	}
-
-	// Prepare CSV
-	file, err := os.Create(filename)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create CSV file: %w", err)
-	}
-	defer file.Close()
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// Write header (add item_sku and item_price_cents)
-	header := []string{
-		"id", "display_id", "created_at", "ship_after",
-		"address_name", "address_address1", "address_address2", "address_postal_code",
-		"address_city", "address_state", "address_state_code", "address_phone_number",
-		"address_country", "address_country_code", "address_company_name",
-		"is_free_shipping", "brand_discounts_includes_free_shipping", "brand_discounts_discount_percentage",
-		"payout_costs_commission_bps", "payout_costs_commission_cents",
-		"item_sku", "item_price_cents", "item_quantity", "sale_source", "sales_rep_name", "notes",
-	}
-	if err := writer.Write(header); err != nil {
-		return 0, fmt.Errorf("failed to write CSV header: %w", err)
-	}
-
-	orderCount := 0
-	for _, order := range newOrders {
-		// Brand discounts fields
-		var includesFreeShipping []string
-		var discountPercentages []string
-		for _, bd := range order.BrandDiscounts {
-			includesFreeShipping = append(includesFreeShipping, strconv.FormatBool(bd.IncludesFreeShipping))
-			discountPercentages = append(discountPercentages, fmt.Sprintf("%.2f", bd.DiscountPercentage))
-		}
-
-		for _, item := range order.Items {
-			row := []string{
-				order.ID,
-				order.DisplayID,
-				order.CreatedAt.Format("20060102"),
-				order.ShipAfter.Format("20060102"),
-				order.Address.Name,
-				order.Address.Address1,
-				order.Address.Address2,
-				order.Address.PostalCode,
-				order.Address.City,
-				order.Address.State,
-				order.Address.StateCode,
-				order.Address.PhoneNumber,
-				order.Address.Country,
-				order.Address.CountryCode,
-				order.Address.CompanyName,
-				strconv.FormatBool(order.IsFreeShipping),
-				strings.Join(includesFreeShipping, ","),
-				strings.Join(discountPercentages, ","),
-				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionBps)*0.01),
-				fmt.Sprintf("%.2f", float64(order.PayoutCosts.CommissionCents)/100.0),
-				item.Sku,
-				fmt.Sprintf("%.2f", float64(item.PriceCents)/100.0),
-				strconv.Itoa(item.Quantity),
-				strings.ToUpper(saleSource),
-				order.SalesRepName,
-				order.Notes,
-			}
-			if err := writer.Write(row); err != nil {
-				return 0, fmt.Errorf("failed to write CSV row: %w", err)
-			}
-		}
-		orderCount++
-	}
-
-	return orderCount, nil
+	return body, nil
 }

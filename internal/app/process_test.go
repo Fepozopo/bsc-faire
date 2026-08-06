@@ -2,7 +2,6 @@ package app
 
 import (
 	"os"
-	"strings"
 	"testing"
 )
 
@@ -48,20 +47,5 @@ func TestProcessShipments_MockClient(t *testing.T) {
 		t.Errorf("expected 1 failed shipment, got %d", len(failed))
 	}
 
-	// Check that the log file was created in the logs directory
-	logDir := "logs"
-	files, err := os.ReadDir(logDir)
-	if err != nil {
-		t.Fatalf("could not read logs directory: %v", err)
-	}
-	found := false
-	for _, f := range files {
-		if strings.HasSuffix(f.Name(), ".txt") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("expected a log file to be created in %s", logDir)
-	}
+	// Shipment results are returned directly to the caller; no log file is created.
 }
