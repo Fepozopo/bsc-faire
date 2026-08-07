@@ -19,8 +19,8 @@ func FormatOrder(order Order) string {
 	}
 
 	s := fmt.Sprintf(
-		"Order ID: %s\nStatus: %s\nRetailer: %s\nCreated: %s\nShip By: %s\nTotal: $%.2f\nNotes: %s\n\nItems:\n",
-		order.DisplayID, order.State, retailer, created, order.ShipAfter.Format("2006-01-02"), float64(totalCents)/100, order.Notes,
+		"Order ID: %s\nStatus: %s\nRetailer: %s\nCreated: %s\nShip By: %s\nTotal: $%.2f\nSales Rep: %s\nNotes: %s\n\nItems:\n",
+		order.DisplayID, order.State, retailer, created, order.ShipAfter.Format("2006-01-02"), float64(totalCents)/100, order.SalesRepName, order.Notes,
 	)
 	for _, item := range order.Items {
 		s += fmt.Sprintf("  - %s x%d ($%.2f each) %s\n",
